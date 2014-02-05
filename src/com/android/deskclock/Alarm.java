@@ -36,14 +36,14 @@ public final class Alarm implements Parcelable {
     //////////////////////////////
     public static final Parcelable.Creator<Alarm> CREATOR
             = new Parcelable.Creator<Alarm>() {
-                public Alarm createFromParcel(Parcel p) {
-                    return new Alarm(p);
-                }
+        public Alarm createFromParcel(Parcel p) {
+            return new Alarm(p);
+        }
 
-                public Alarm[] newArray(int size) {
-                    return new Alarm[size];
-                }
-            };
+        public Alarm[] newArray(int size) {
+            return new Alarm[size];
+        }
+    };
 
     public int describeContents() {
         return 0;
@@ -60,6 +60,9 @@ public final class Alarm implements Parcelable {
         p.writeString(label);
         p.writeParcelable(alert, flags);
         p.writeInt(silent ? 1 : 0);
+        p.writeInt(lightEnabled ? 1 : 0);
+        p.writeInt(lightColor);
+        p.writeInt(lightTime);
     }
     //////////////////////////////
     // end Parcelable apis
@@ -125,6 +128,23 @@ public final class Alarm implements Parcelable {
         public static final String ALERT = "alert";
 
         /**
+         * Light is enabled?
+         */
+        public static final String LIGHT_ENABLED = "light_enabled";
+
+        /**
+         * Color light alarm should trigger
+         * <P>Type: INTEGER</P>
+         */
+        public static final String LIGHT_COLOR = "light_color";
+
+        /**
+         * Dimming time for light
+         * <P>Type: INTEGER</P>
+         */
+        public static final String LIGHT_TIME = "light_time";
+
+        /**
          * The default sort order for this table
          */
         public static final String DEFAULT_SORT_ORDER =
@@ -134,8 +154,8 @@ public final class Alarm implements Parcelable {
         public static final String WHERE_ENABLED = ENABLED + "=1";
 
         static final String[] ALARM_QUERY_COLUMNS = {
-            _ID, HOUR, MINUTES, DAYS_OF_WEEK, ALARM_TIME,
-            ENABLED, VIBRATE, MESSAGE, ALERT };
+                _ID, HOUR, MINUTES, DAYS_OF_WEEK, ALARM_TIME,
+                ENABLED, VIBRATE, MESSAGE, ALERT, LIGHT_ENABLED, LIGHT_COLOR, LIGHT_TIME};
 
         /**
          * These save calls to cursor.getColumnIndexOrThrow()
@@ -150,22 +170,30 @@ public final class Alarm implements Parcelable {
         public static final int ALARM_VIBRATE_INDEX = 6;
         public static final int ALARM_MESSAGE_INDEX = 7;
         public static final int ALARM_ALERT_INDEX = 8;
+        public static final int ALARM_LIGHT_ENABLED_INDEX = 9;
+        public static final int ALARM_LIGHT_COLOR_INDEX = 10;
+        public static final int ALARM_LIGHT_TIME_INDEX = 11;
+
+
     }
     //////////////////////////////
     // End column definitions
     //////////////////////////////
 
     // Public fields
-    public int        id;
-    public boolean    enabled;
-    public int        hour;
-    public int        minutes;
+    public int id;
+    public boolean enabled;
+    public int hour;
+    public int minutes;
     public DaysOfWeek daysOfWeek;
-    public long       time;
-    public boolean    vibrate;
-    public String     label;
-    public Uri        alert;
-    public boolean    silent;
+    public long time;
+    public boolean vibrate;
+    public boolean lightEnabled;
+    public int lightColor;
+    public int lightTime;
+    public String label;
+    public Uri alert;
+    public boolean silent;
 
     @Override
     public String toString() {
@@ -178,6 +206,9 @@ public final class Alarm implements Parcelable {
                 ", daysOfWeek=" + daysOfWeek +
                 ", time=" + time +
                 ", vibrate=" + vibrate +
+                ", lightEnabled=" + lightEnabled +
+                ", lightColor=" + lightColor +
+                ", lightTime=" + lightTime +
                 ", label='" + label + '\'' +
                 ", silent=" + silent +
                 '}';
@@ -193,6 +224,9 @@ public final class Alarm implements Parcelable {
         vibrate = c.getInt(Columns.ALARM_VIBRATE_INDEX) == 1;
         label = c.getString(Columns.ALARM_MESSAGE_INDEX);
         String alertString = c.getString(Columns.ALARM_ALERT_INDEX);
+        lightEnabled = c.getInt(Columns.ALARM_LIGHT_ENABLED_INDEX) == 1;
+        lightColor = c.getInt(Columns.ALARM_LIGHT_COLOR_INDEX);
+        lightTime = c.getInt(Columns.ALARM_LIGHT_TIME_INDEX);
         if (Alarms.ALARM_ALERT_SILENT.equals(alertString)) {
             if (Log.LOGV) {
                 Log.v("Alarm is marked as silent");
@@ -223,6 +257,9 @@ public final class Alarm implements Parcelable {
         label = p.readString();
         alert = (Uri) p.readParcelable(null);
         silent = p.readInt() == 1;
+        lightEnabled = p.readInt() == 1;
+        lightColor = p.readInt();
+        lightTime = p.readInt();
     }
 
     // Creates a default alarm at the current time.
@@ -231,6 +268,9 @@ public final class Alarm implements Parcelable {
         hour = 0;
         minutes = 0;
         vibrate = true;
+        lightEnabled = false;
+        lightColor = 0;
+        lightTime = 0;
         daysOfWeek = new DaysOfWeek(0);
         label = "";
         alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
@@ -269,18 +309,19 @@ public final class Alarm implements Parcelable {
      */
     static final class DaysOfWeek {
 
-        private static int[] DAY_MAP = new int[] {
-            Calendar.MONDAY,
-            Calendar.TUESDAY,
-            Calendar.WEDNESDAY,
-            Calendar.THURSDAY,
-            Calendar.FRIDAY,
-            Calendar.SATURDAY,
-            Calendar.SUNDAY,
+        private static int[] DAY_MAP = new int[]{
+                Calendar.MONDAY,
+                Calendar.TUESDAY,
+                Calendar.WEDNESDAY,
+                Calendar.THURSDAY,
+                Calendar.FRIDAY,
+                Calendar.SATURDAY,
+                Calendar.SUNDAY,
         };
 
 
         private static HashMap<Integer, Integer> DAY_TO_BIT_MASK = new HashMap<Integer, Integer>();
+
         static {
             for (int i = 0; i < DAY_MAP.length; i++) {
                 DAY_TO_BIT_MASK.put(DAY_MAP[i], i);
@@ -326,8 +367,8 @@ public final class Alarm implements Parcelable {
             // short or long form?
             DateFormatSymbols dfs = new DateFormatSymbols();
             String[] dayList = (forAccessibility || dayCount <= 1) ?
-                            dfs.getWeekdays() :
-                            dfs.getShortWeekdays();
+                    dfs.getWeekdays() :
+                    dfs.getShortWeekdays();
 
             // selected days
             for (int i = 0; i < 7; i++) {
@@ -349,7 +390,7 @@ public final class Alarm implements Parcelable {
          * Sets the repeat day for the alarm.
          *
          * @param dayOfWeek One of: Calendar.SUNDAY, Calendar.MONDAY, Calendar.TUESDAY, etc.
-         * @param set Whether to set or unset.
+         * @param set       Whether to set or unset.
          */
         public void setDayOfWeek(int dayOfWeek, boolean set) {
             final int bitIndex = DAY_TO_BIT_MASK.get(dayOfWeek);
@@ -397,6 +438,7 @@ public final class Alarm implements Parcelable {
 
         /**
          * returns number of days from today until next alarm
+         *
          * @param c must be set to today
          */
         public int getNextAlarm(Calendar c) {

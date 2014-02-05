@@ -191,8 +191,8 @@
                 android:layout_height="match_parent"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_marginRight="16dp"
-                android:layout_marginEnd="16dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginEnd="8dp"
                 android:gravity="center_vertical"
                 style="@style/body"
                 android:background="@drawable/item_background"
@@ -215,7 +215,18 @@
                 android:layout_width="wrap_content"
                 android:layout_gravity="center_vertical|end"
                 style="@style/body"/>
+            <CheckBox
+                android:id="@+id/light_onoff"
+                android:text="@string/alarm_light"
+                android:includeFontPadding="false"
+                android:textColor="@color/clock_gray"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_gravity="center_vertical|end"
+                style="@style/body"/>
         </LinearLayout>
+
+
         <View
             android:id="@+id/hairline"
             android:layout_height="1dp"

@@ -62,7 +62,10 @@
     <string name="set_alarm">Set alarm</string>
 
     <!-- Setting labels on Set alarm screen: Vibration on or off -->
-    <string name="alarm_vibrate">Vibrate</string>
+    <string name="alarm_vibrate">Vibe</string>
+
+    <!-- Setting labels on Set alarm screen: Light on or off -->
+    <string name="alarm_light">Light</string>
 
     <!-- Setting labels on Set alarm screen: Repeat -->
     <string name="alarm_repeat">Repeat</string>

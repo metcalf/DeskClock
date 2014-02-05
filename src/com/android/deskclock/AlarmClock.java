@@ -56,6 +56,7 @@ import android.widget.ToggleButton;
 
 import com.android.deskclock.widget.ActionableToastBar;
 import com.android.deskclock.widget.swipeablelistview.SwipeableListView;
+import com.throughawall.implight.LightPicker;
 
 import java.text.DateFormatSymbols;
 import java.util.Calendar;
@@ -81,6 +82,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
     private static final String KEY_DELETE_CONFIRMATION = "deleteConfirmation";
 
     private static final int REQUEST_CODE_RINGTONE = 1;
+    private static final int REQUEST_CODE_LIGHT = 2;
 
     private SwipeableListView mAlarmsList;
     private AlarmItemAdapter mAdapter;
@@ -187,6 +189,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
             showConfirmationDialog();
         }
     }
+
     private void hideUndoBar(boolean animate, MotionEvent event) {
         if (mUndoBar != null) {
             if (event != null && mUndoBar.isEventInToastBar(event)) {
@@ -316,7 +319,9 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         gotoAlarmIfSpecified();
     }
 
-    /** If an alarm was passed in via intent and goes to that particular alarm in the list. */
+    /**
+     * If an alarm was passed in via intent and goes to that particular alarm in the list.
+     */
     private void gotoAlarmIfSpecified() {
         final Intent intent = getIntent();
         if (mFirstLoad && intent != null) {
@@ -377,6 +382,32 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         asyncUpdateAlarm(mSelectedAlarm, false);
     }
 
+    private void launchLightPicker(Alarm alarm) {
+        mSelectedAlarm = alarm;
+
+        final Intent intent = new Intent(LightPicker.ACTION_LIGHT_PICKER);
+        intent.putExtra(LightPicker.EXTRA_COLOR, alarm.lightColor);
+        intent.putExtra(LightPicker.EXTRA_TIME, alarm.lightTime);
+        startActivityForResult(intent, REQUEST_CODE_LIGHT);
+    }
+
+    private void saveLightSetting(Intent intent) {
+        int color = intent.getIntExtra(LightPicker.EXTRA_COLOR, 0);
+        int time = intent.getIntExtra(LightPicker.EXTRA_TIME, 0);
+        boolean colored = color > 0;
+
+        mSelectedAlarm.lightEnabled = colored;
+        mSelectedAlarm.lightColor = color;
+        mSelectedAlarm.lightTime = time;
+
+        CheckBox cb = (CheckBox) mAdapter.getViewById(R.id.light_onoff);
+
+        cb.setTextColor(colored ? color : mAdapter.mColorDim);
+        cb.setChecked(colored);
+
+        asyncUpdateAlarm(mSelectedAlarm, false);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
@@ -384,13 +415,16 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
                 case REQUEST_CODE_RINGTONE:
                     saveRingtoneUri(data);
                     break;
+                case REQUEST_CODE_LIGHT:
+                    saveLightSetting(data);
+                    break;
                 default:
                     Log.w("Unhandled request code in onActivityResult: " + requestCode);
             }
         }
     }
 
-    /***
+    /**
      * On long click, mark/unmark the selected view and activate/deactivate action mode
      */
     @Override
@@ -401,7 +435,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         return false;
     }
 
-    /***
+    /**
      * Activate/update/close action mode according to the number of selected views.
      */
     private void updateActionMode() {
@@ -422,8 +456,9 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         }
     }
 
-    /***
+    /**
      * Display the number of selected items on the action bar in action mode
+     *
      * @param items - number of selected items
      */
     private void setActionModeTitle(int items) {
@@ -453,7 +488,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         private final boolean mHasVibrator;
 
         // This determines the order in which it is shown and processed in the UI.
-        private final int[] DAY_ORDER = new int[] {
+        private final int[] DAY_ORDER = new int[]{
                 Calendar.SUNDAY,
                 Calendar.MONDAY,
                 Calendar.TUESDAY,
@@ -479,6 +514,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
             ViewGroup[] dayButtonParents = new ViewGroup[7];
             ToggleButton[] dayButtons = new ToggleButton[7];
             CheckBox vibrate;
+            CheckBox light;
             ViewGroup collapse;
             TextView ringtone;
             View hairLine;
@@ -504,7 +540,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         };
 
         public AlarmItemAdapter(Context context, int[] expandedIds, int[] repeatCheckedIds,
-                int[] selectedAlarms, Bundle previousDaysOfWeekMap, ListView list) {
+                                int[] selectedAlarms, Bundle previousDaysOfWeekMap, ListView list) {
             super(context, null, 0);
             mContext = context;
             mFactory = LayoutInflater.from(context);
@@ -609,6 +645,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
                 holder.dayButtonParents[i] = viewgroup;
             }
             holder.vibrate = (CheckBox) view.findViewById(R.id.vibrate_onoff);
+            holder.light = (CheckBox) view.findViewById(R.id.light_onoff);
             holder.collapse = (ViewGroup) view.findViewById(R.id.collapse);
             holder.ringtone = (TextView) view.findViewById(R.id.choose_ringtone);
 
@@ -639,7 +676,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
                     new CompoundButton.OnCheckedChangeListener() {
                         @Override
                         public void onCheckedChanged(CompoundButton compoundButton,
-                                boolean checked) {
+                                                     boolean checked) {
                             //When action mode is on - simulate long click
                             if (doLongClick(compoundButton)) {
                                 return;
@@ -718,7 +755,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
                 itemHolder.label.setVisibility(View.VISIBLE);
                 itemHolder.label.setContentDescription(
                         mContext.getResources().getString(R.string.label_description) + " "
-                        + alarm.label);
+                                + alarm.label);
                 itemHolder.label.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -887,6 +924,34 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
                 }
             });
 
+
+            itemHolder.light.setVisibility(View.VISIBLE);
+            if (!alarm.lightEnabled) {
+                itemHolder.light.setChecked(false);
+                itemHolder.light.setTextColor(mColorDim);
+            } else {
+                itemHolder.light.setChecked(true);
+                itemHolder.light.setTextColor(mColorLit);
+            }
+            itemHolder.light.setOnLongClickListener(mLongClickListener);
+
+            itemHolder.light.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    final boolean checked = ((CheckBox) v).isChecked();
+                    //When action mode is on - simulate long click
+                    if (doLongClick(v)) {
+                        return;
+                    }
+                    if (checked) {
+                        ((CheckBox) v).setChecked(false);
+                        launchLightPicker(alarm);
+                    } else {
+                        alarm.lightEnabled = false;
+                    }
+                }
+            });
+
             itemHolder.collapse.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -945,7 +1010,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
             }
         }
 
-        /***
+        /**
          * Simulate a long click to override clicks on view when ActionMode is on
          * Returns true if handled a long click, false if not
          */
@@ -966,7 +1031,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
             // long press could be on the parent view or one of its childs, so find the parent view
             v = getTopParent(v);
             if (v != null) {
-                int id = ((ItemHolder)v.getTag()).alarm.id;
+                int id = ((ItemHolder) v.getTag()).alarm.id;
                 if (mSelectedAlarms.contains(id)) {
                     mSelectedAlarms.remove(id);
                 } else {
@@ -1062,7 +1127,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
             for (int i = 0; i < mList.getCount(); i++) {
                 View v = mList.getChildAt(i);
                 if (v != null) {
-                    ItemHolder h = (ItemHolder)(v.getTag());
+                    ItemHolder h = (ItemHolder) (v.getTag());
                     if (h != null && h.alarm.id == id) {
                         return v;
                     }
@@ -1112,11 +1177,11 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         }
 
         public void deleteSelectedAlarms() {
-            Integer ids [] = new Integer[mSelectedAlarms.size()];
+            Integer ids[] = new Integer[mSelectedAlarms.size()];
             int index = 0;
             for (int id : mSelectedAlarms) {
                 ids[index] = id;
-                index ++;
+                index++;
             }
             asyncDeleteAlarm(ids);
             clearSelectedAlarms();
@@ -1137,7 +1202,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         asyncAddAlarm(a, true);
     }
 
-    private void asyncDeleteAlarm(final Integer [] alarmIds) {
+    private void asyncDeleteAlarm(final Integer[] alarmIds) {
         final AsyncTask<Integer, Void, Void> deleteTask = new AsyncTask<Integer, Void, Void>() {
             @Override
             protected Void doInBackground(Integer... ids) {
@@ -1227,7 +1292,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         AlarmUtils.popAlarmSetToast(this, alarm.hour, alarm.minutes, alarm.daysOfWeek);
     }
 
-    /***
+    /**
      * Support for action mode when the user long presses an item in the alarms list
      */
 
@@ -1252,7 +1317,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
 
     @Override
     public void onDestroyActionMode(ActionMode arg0) {
-        if(mAdapter != null) {
+        if (mAdapter != null) {
             mAdapter.clearSelectedAlarms();
         }
         mActionMode = null;
@@ -1263,7 +1328,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
         return false;
     }
 
-    /***
+    /**
      * Handle the delete alarms confirmation dialog
      */
 
@@ -1278,6 +1343,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
                 .setPositiveButton(res.getString(android.R.string.ok), this).show();
         mInDeleteConfirmation = true;
     }
+
     @Override
     public void onClick(DialogInterface dialog, int which) {
         if (which == -1) {
