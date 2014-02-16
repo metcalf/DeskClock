@@ -35,6 +35,11 @@ import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.format.DateUtils;
 
+import com.throughawall.colorpicker.ColorTask;
+import com.throughawall.colorpicker.SetColorRequest;
+
+import java.io.UnsupportedEncodingException;
+
 /**
  * Manages alarms and vibe. Runs as a service so that it can continue to play
  * if another activity overrides the AlarmAlert dialog.
@@ -46,6 +51,7 @@ public class AlarmKlaxon extends Service {
     private static final long[] sVibratePattern = new long[] { 500, 500 };
 
     private boolean mPlaying = false;
+    private boolean mPlayedOnce = false;
     private Vibrator mVibrator;
     private MediaPlayer mMediaPlayer;
     private Alarm mCurrentAlarm;
@@ -226,9 +232,34 @@ public class AlarmKlaxon extends Service {
             mVibrator.cancel();
         }
 
+        /* Fire up the lights, but only call once. */
+        if (alarm.lightEnabled && !mPlayedOnce){
+            ColorTask setColorTask = new ColorTask(this){
+                @Override
+                protected void onPostExecute(ColorResponse result) {
+                    super.onPostExecute(result);
+                    if(mError != null){
+                        lightError(mError);
+                    }
+                }
+            };
+            try {
+                SetColorRequest request = new SetColorRequest(getResources().getString(R.string.imp_id), alarm.lightColor, alarm.lightTime);
+                setColorTask.execute(request);
+            } catch (UnsupportedEncodingException e){
+                lightError(e);
+            }
+        }
+
         enableKiller(alarm);
         mPlaying = true;
+        mPlayedOnce = true;
         mStartTime = System.currentTimeMillis();
+    }
+
+    private void lightError(Exception reason){
+        mVibrator.vibrate(sVibratePattern, 0);
+        Log.e("Error activating lights", reason);
     }
 
     // Do the common stuff when starting the alarm.

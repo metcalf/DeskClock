@@ -56,7 +56,6 @@ import android.widget.ToggleButton;
 
 import com.android.deskclock.widget.ActionableToastBar;
 import com.android.deskclock.widget.swipeablelistview.SwipeableListView;
-import com.throughawall.implight.LightPicker;
 
 import java.text.DateFormatSymbols;
 import java.util.Calendar;
@@ -385,7 +384,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
     private void launchLightPicker(Alarm alarm) {
         mSelectedAlarm = alarm;
 
-        final Intent intent = new Intent(LightPicker.ACTION_LIGHT_PICKER);
+        final Intent intent = new Intent(this, LightPicker.class);
         intent.putExtra(LightPicker.EXTRA_COLOR, alarm.lightColor);
         intent.putExtra(LightPicker.EXTRA_TIME, alarm.lightTime);
         startActivityForResult(intent, REQUEST_CODE_LIGHT);
@@ -394,15 +393,15 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
     private void saveLightSetting(Intent intent) {
         int color = intent.getIntExtra(LightPicker.EXTRA_COLOR, 0);
         int time = intent.getIntExtra(LightPicker.EXTRA_TIME, 0);
-        boolean colored = color > 0;
+        boolean colored = (color != 0);
 
         mSelectedAlarm.lightEnabled = colored;
         mSelectedAlarm.lightColor = color;
         mSelectedAlarm.lightTime = time;
 
-        CheckBox cb = (CheckBox) mAdapter.getViewById(R.id.light_onoff);
+        CheckBox cb = (CheckBox) findViewById(R.id.light_onoff);
 
-        cb.setTextColor(colored ? color : mAdapter.mColorDim);
+        cb.setTextColor(colored ? color : getResources().getColor(R.color.clock_gray));
         cb.setChecked(colored);
 
         asyncUpdateAlarm(mSelectedAlarm, false);

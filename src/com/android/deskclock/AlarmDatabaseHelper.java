@@ -50,16 +50,16 @@ class AlarmDatabaseHelper extends SQLiteOpenHelper {
                    "vibrate INTEGER, " +
                    "message TEXT, " +
                    "alert TEXT, " +
-                   "light_enabled, " +
+                   "light_enabled INTEGER, " +
                    "light_color INTEGER, " +
                    "light_time INTEGER);");
 
         // insert default alarms
         String insertMe = "INSERT INTO alarms " +
                 "(hour, minutes, daysofweek, alarmtime, enabled, vibrate, " +
-                " message, alert, light_color, light_time) VALUES ";
-        db.execSQL(insertMe + "(8, 30, 31, 0, 0, 1, '', '', 0, 0);");
-        db.execSQL(insertMe + "(9, 00, 96, 0, 0, 1, '', '', 0, 0);");
+                " message, alert, light_enabled, light_color, light_time) VALUES ";
+        db.execSQL(insertMe + "(8, 30, 31, 0, 0, 1, '', '', 0, 0, 0);");
+        db.execSQL(insertMe + "(9, 00, 96, 0, 0, 1, '', '', 0, 0, 0);");
     }
 
     @Override

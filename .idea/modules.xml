@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DeskClock.iml" filepath="$PROJECT_DIR$/DeskClock.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../ImpLight/implight/src/main/ImpLight.iml" filepath="$PROJECT_DIR$/../ImpLight/implight/src/main/ImpLight.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ImpLight/colorpicker/src/main/colorpicker.iml" filepath="$PROJECT_DIR$/../ImpLight/colorpicker/src/main/colorpicker.iml" />
     </modules>
   </component>
 </project>
