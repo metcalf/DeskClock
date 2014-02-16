@@ -947,6 +947,7 @@ public class AlarmClock extends Activity implements LoaderManager.LoaderCallback
                         launchLightPicker(alarm);
                     } else {
                         alarm.lightEnabled = false;
+                        asyncUpdateAlarm(alarm, false);
                     }
                 }
             });

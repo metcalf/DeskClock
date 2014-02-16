@@ -47,7 +47,7 @@ public class AlarmKlaxon extends Service {
     // Default of 10 minutes until alarm is silenced.
     private static final String DEFAULT_ALARM_TIMEOUT = "10";
 
-    private static final long[] sVibratePattern = new long[] { 500, 500 };
+    private static final long[] sVibratePattern = new long[]{500, 500};
 
     private boolean mPlaying = false;
     private boolean mPlayedOnce = false;
@@ -150,7 +150,7 @@ public class AlarmKlaxon extends Service {
 
     private void sendKillBroadcast(Alarm alarm, boolean replaced) {
         long millis = System.currentTimeMillis() - mStartTime;
-        int minutes = (int) Math.round(millis / (double)DateUtils.MINUTE_IN_MILLIS);
+        int minutes = (int) Math.round(millis / (double) DateUtils.MINUTE_IN_MILLIS);
         Intent alarmKilled = new Intent(Alarms.ALARM_KILLED);
         alarmKilled.putExtra(Alarms.ALARM_INTENT_EXTRA, alarm);
         alarmKilled.putExtra(Alarms.ALARM_KILLED_TIMEOUT, minutes);
@@ -225,31 +225,14 @@ public class AlarmKlaxon extends Service {
             }
         }
 
-        if(alarm.lightEnabled && !mPlayedOnce){
-            WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
-            String bssid = getResources().getString(R.string.imp_bssid);
-
-            if(wifi.getWifiState() == WifiManager.WIFI_STATE_ENABLED){
-                for(ScanResult result : wifi.getScanResults()){
-                    if(result.BSSID.equals(bssid)){
-                        mCanLight = true;
-                        break;
-                    }
-                }
-                if(!mCanLight){
-                    Log.v(String.format("Cannot use light alarm because %s is not a visible network", bssid));
-                }
-            } else {
-                Log.v(String.format("Cannot use light alarm because wifi is in state: %s", wifi.getWifiState()));
-                mCanLight = false;
-            }
-
-            if(mCanLight){
-                try {
-                    (new AlarmLightTask(alarm, this)).execute();
-                } catch (UnsupportedEncodingException e){
-                    Log.e("Exception instantiating light task.", e);
-                }
+        if (alarm.lightEnabled && !mPlayedOnce) {
+            try {
+                (new AlarmLightTask(alarm, this)).execute();
+                mCanLight = true;
+            } catch (UnsupportedEncodingException e) {
+                Log.e("Exception instantiating light task.", e);
+            } catch (IllegalStateException e) {
+                Log.e("Exception instantiating light task.", e);
             }
         }
 
@@ -269,8 +252,8 @@ public class AlarmKlaxon extends Service {
     // Do the common stuff when starting the alarm.
     private void startAlarm(MediaPlayer player)
             throws java.io.IOException, IllegalArgumentException,
-                   IllegalStateException {
-        final AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+            IllegalStateException {
+        final AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         // do not play alarms if stream volume is 0
         // (typically because ringer mode is silent).
         if (audioManager.getStreamVolume(AudioManager.STREAM_ALARM) != 0) {
@@ -282,7 +265,7 @@ public class AlarmKlaxon extends Service {
     }
 
     private void setDataSourceFromResource(Resources resources,
-            MediaPlayer player, int res) throws java.io.IOException {
+                                           MediaPlayer player, int res) throws java.io.IOException {
         AssetFileDescriptor afd = resources.openRawResourceFd(res);
         if (afd != null) {
             player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(),
@@ -316,15 +299,15 @@ public class AlarmKlaxon extends Service {
     /**
      * Kills alarm audio after ALARM_TIMEOUT_SECONDS, so the alarm
      * won't run all day.
-     *
+     * <p/>
      * This just cancels the audio, but leaves the notification
      * popped, so the user will know that the alarm tripped.
      */
     private void enableKiller(Alarm alarm) {
         final String autoSnooze =
                 PreferenceManager.getDefaultSharedPreferences(this)
-                .getString(SettingsActivity.KEY_AUTO_SILENCE,
-                        DEFAULT_ALARM_TIMEOUT);
+                        .getString(SettingsActivity.KEY_AUTO_SILENCE,
+                                DEFAULT_ALARM_TIMEOUT);
         int autoSnoozeMinutes = Integer.parseInt(autoSnooze);
         if (autoSnoozeMinutes != -1) {
             mHandler.sendMessageDelayed(mHandler.obtainMessage(KILLER, alarm),

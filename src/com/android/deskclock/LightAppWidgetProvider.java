@@ -20,9 +20,7 @@ import java.util.List;
  */
 public class LightAppWidgetProvider extends AppWidgetProvider {
     private static final String BUTTON_INTENT = "com.android.deskclock.action.light_appwidget";
-    private static final long[] sVibratePattern = new long[] { 0, 150, 150, 150 };
-
-    private Vibrator mVibrator;
+    private static final long[] sVibratePattern = new long[]{0, 150, 150, 150, 150, 150};
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -35,8 +33,6 @@ public class LightAppWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-
         for (int appWidgetId : appWidgetIds) {
 
             Intent intent = new Intent(context, getClass());
@@ -50,7 +46,9 @@ public class LightAppWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void startLights(Context context){
+    private void startLights(Context context) {
+        Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+
         List<Alarm> alarms = new ArrayList<Alarm>();
         final Cursor cursor = Alarms.getAlarmsCursor(context.getContentResolver());
 
@@ -60,7 +58,7 @@ public class LightAppWidgetProvider extends AppWidgetProvider {
                 if (cursor.moveToFirst()) {
                     do {
                         final Alarm a = new Alarm(cursor);
-                        if(a.lightEnabled && a.lightColor != 0){
+                        if (a.lightEnabled && a.lightColor != 0) {
                             if (a.time == 0) {
                                 a.time = Alarms.calculateAlarm(a);
                             }
@@ -73,12 +71,18 @@ public class LightAppWidgetProvider extends AppWidgetProvider {
             }
         }
 
+        if (alarms.size() < 1) {
+            Log.v("No alarm has a light setting");
+            vibrator.vibrate(sVibratePattern, -1);
+            return;
+        }
+
         Alarm alarm = Collections.min(alarms, new Comparator<Alarm>() {
             @Override
             public int compare(Alarm alarm, Alarm alarm2) {
-                if(alarm.enabled && !alarm2.enabled){
+                if (alarm.enabled && !alarm2.enabled) {
                     return -1;
-                } else if(!alarm.enabled && alarm2.enabled){
+                } else if (!alarm.enabled && alarm2.enabled) {
                     return 1;
                 } else {
                     return Long.valueOf(alarm.time).compareTo(alarm2.time);
@@ -86,15 +90,14 @@ public class LightAppWidgetProvider extends AppWidgetProvider {
             }
         });
 
-        if(alarm == null){
-            Log.v("No alarm has a light setting");
-            mVibrator.vibrate(sVibratePattern, -1);
-        } else {
-            try {
-                (new AlarmLightTask(alarm, context)).execute();
-            } catch (UnsupportedEncodingException e) {
-                Log.e("Exception instantiating light task.", e);
-            }
+        try {
+            (new AlarmLightTask(alarm, context)).execute();
+        } catch (UnsupportedEncodingException e) {
+            Log.e("Exception instantiating light task.", e);
+            vibrator.vibrate(sVibratePattern, -1);
+        } catch (IllegalStateException e) {
+            Log.e("Exception instantiating light task.", e);
+            vibrator.vibrate(sVibratePattern, -1);
         }
     }
 }
