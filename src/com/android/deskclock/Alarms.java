@@ -592,7 +592,7 @@ public class Alarms {
         context.sendBroadcast(alarmChanged);
     }
 
-    private static long calculateAlarm(Alarm alarm) {
+    static long calculateAlarm(Alarm alarm) {
         return calculateAlarm(alarm.hour, alarm.minutes, alarm.daysOfWeek)
                 .getTimeInMillis();
     }

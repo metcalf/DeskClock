@@ -26,6 +26,8 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -34,9 +36,6 @@ import android.preference.PreferenceManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.format.DateUtils;
-
-import com.throughawall.colorpicker.ColorTask;
-import com.throughawall.colorpicker.SetColorRequest;
 
 import java.io.UnsupportedEncodingException;
 
@@ -52,6 +51,7 @@ public class AlarmKlaxon extends Service {
 
     private boolean mPlaying = false;
     private boolean mPlayedOnce = false;
+    private boolean mCanLight = false;
     private Vibrator mVibrator;
     private MediaPlayer mMediaPlayer;
     private Alarm mCurrentAlarm;
@@ -225,41 +225,45 @@ public class AlarmKlaxon extends Service {
             }
         }
 
+        if(alarm.lightEnabled && !mPlayedOnce){
+            WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+            String bssid = getResources().getString(R.string.imp_bssid);
+
+            if(wifi.getWifiState() == WifiManager.WIFI_STATE_ENABLED){
+                for(ScanResult result : wifi.getScanResults()){
+                    if(result.BSSID.equals(bssid)){
+                        mCanLight = true;
+                        break;
+                    }
+                }
+                if(!mCanLight){
+                    Log.v(String.format("Cannot use light alarm because %s is not a visible network", bssid));
+                }
+            } else {
+                Log.v(String.format("Cannot use light alarm because wifi is in state: %s", wifi.getWifiState()));
+                mCanLight = false;
+            }
+
+            if(mCanLight){
+                try {
+                    (new AlarmLightTask(alarm, this)).execute();
+                } catch (UnsupportedEncodingException e){
+                    Log.e("Exception instantiating light task.", e);
+                }
+            }
+        }
+
         /* Start the vibrator after everything is ok with the media player */
-        if (alarm.vibrate) {
+        if (alarm.vibrate || (alarm.lightEnabled && !mCanLight)) {
             mVibrator.vibrate(sVibratePattern, 0);
         } else {
             mVibrator.cancel();
-        }
-
-        /* Fire up the lights, but only call once. */
-        if (alarm.lightEnabled && !mPlayedOnce){
-            ColorTask setColorTask = new ColorTask(this){
-                @Override
-                protected void onPostExecute(ColorResponse result) {
-                    super.onPostExecute(result);
-                    if(mError != null){
-                        lightError(mError);
-                    }
-                }
-            };
-            try {
-                SetColorRequest request = new SetColorRequest(getResources().getString(R.string.imp_id), alarm.lightColor, alarm.lightTime);
-                setColorTask.execute(request);
-            } catch (UnsupportedEncodingException e){
-                lightError(e);
-            }
         }
 
         enableKiller(alarm);
         mPlaying = true;
         mPlayedOnce = true;
         mStartTime = System.currentTimeMillis();
-    }
-
-    private void lightError(Exception reason){
-        mVibrator.vibrate(sVibratePattern, 0);
-        Log.e("Error activating lights", reason);
     }
 
     // Do the common stuff when starting the alarm.
