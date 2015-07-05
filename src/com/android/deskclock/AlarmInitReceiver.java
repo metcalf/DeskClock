@@ -23,6 +23,8 @@ import android.content.SharedPreferences;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
 
+import com.android.deskclock.alarms.AlarmStateManager;
+
 import com.android.deskclock.timer.TimerObj;
 
 public class AlarmInitReceiver extends BroadcastReceiver {
@@ -37,34 +39,38 @@ public class AlarmInitReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(final Context context, Intent intent) {
         final String action = intent.getAction();
-        if (Log.LOGV) Log.v("AlarmInitReceiver " + action);
+        LogUtils.v("AlarmInitReceiver " + action);
 
         final PendingResult result = goAsync();
         final WakeLock wl = AlarmAlertWakeLock.createPartialWakeLock(context);
         wl.acquire();
+
+        // We need to increment the global id out of the async task to prevent
+        // race conditions
+        AlarmStateManager.updateGlobalIntentId(context);
         AsyncHandler.post(new Runnable() {
             @Override public void run() {
                 // Remove the snooze alarm after a boot.
                 if (action.equals(Intent.ACTION_BOOT_COMPLETED)) {
-                    Alarms.saveSnoozeAlert(context, Alarms.INVALID_ALARM_ID, -1);
-                    Alarms.disableExpiredAlarms(context);
-
                     // Clear stopwatch and timers data
                     SharedPreferences prefs =
                             PreferenceManager.getDefaultSharedPreferences(context);
-                    Log.v("AlarmInitReceiver - Reset timers and clear stopwatch data");
+                    LogUtils.v("AlarmInitReceiver - Reset timers and clear stopwatch data");
                     TimerObj.resetTimersInSharedPrefs(prefs);
                     Utils.clearSwSharedPref(prefs);
 
                     if (!prefs.getBoolean(PREF_VOLUME_DEF_DONE, false)) {
                         // Fix the default
-                        Log.v("AlarmInitReceiver - resetting volume button default");
+                        LogUtils.v("AlarmInitReceiver - resetting volume button default");
                         switchVolumeButtonDefault(prefs);
                     }
                 }
-                Alarms.setNextAlert(context);
+
+                // Update all the alarm instances on time change event
+                AlarmStateManager.fixAlarmInstances(context);
+
                 result.finish();
-                Log.v("AlarmInitReceiver finished");
+                LogUtils.v("AlarmInitReceiver finished");
                 wl.release();
             }
         });

@@ -16,7 +16,8 @@
 
 package com.android.deskclock;
 
-import android.app.PendingIntent;
+import android.app.Activity;
+import android.app.AlarmManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -29,26 +30,27 @@ import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.animation.AnimationUtils;
+import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.TextClock;
 
+import com.android.deskclock.worldclock.CitiesActivity;
 import com.android.deskclock.worldclock.WorldClockAdapter;
 
 /**
  * Fragment that shows  the clock (analog or digital), the next alarm info and the world clock.
  */
-
 public class ClockFragment extends DeskClockFragment implements OnSharedPreferenceChangeListener {
 
     private static final String BUTTONS_HIDDEN_KEY = "buttons_hidden";
     private final static String TAG = "ClockFragment";
 
-    private View mButtons;
     private boolean mButtonsHidden = false;
-    private View mDigitalClock, mAnalogClock, mClockFrame;
+    private View mDigitalClock, mAnalogClock, mClockFrame, mHairline;
     private WorldClockAdapter mAdapter;
     private ListView mList;
     private SharedPreferences mPrefs;
@@ -57,73 +59,87 @@ public class ClockFragment extends DeskClockFragment implements OnSharedPreferen
     private String mDefaultClockStyle;
     private String mClockStyle;
 
-    private PendingIntent mQuarterlyIntent;
     private final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
-            @Override
+        @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             boolean changed = action.equals(Intent.ACTION_TIME_CHANGED)
                     || action.equals(Intent.ACTION_TIMEZONE_CHANGED)
                     || action.equals(Intent.ACTION_LOCALE_CHANGED);
-            if (changed || action.equals(Utils.ACTION_ON_QUARTER_HOUR)) {
-                Utils.updateDate(mDateFormat, mDateFormatForAccessibility,mClockFrame);
+            if (changed) {
+                Utils.updateDate(mDateFormat, mDateFormatForAccessibility, mClockFrame);
                 if (mAdapter != null) {
                     // *CHANGED may modify the need for showing the Home City
-                    if (changed && (mAdapter.hasHomeCity() != mAdapter.needHomeCity())) {
+                    if (mAdapter.hasHomeCity() != mAdapter.needHomeCity()) {
                         mAdapter.reloadData(context);
                     } else {
                         mAdapter.notifyDataSetChanged();
                     }
-                    // Reloading the cities list with new localized names
+                    // Locale change: update digital clock format and
+                    // reload the cities list with new localized names
                     if (action.equals(Intent.ACTION_LOCALE_CHANGED)) {
+                        if (mDigitalClock != null) {
+                            Utils.setTimeFormat(
+                                    (TextClock) (mDigitalClock.findViewById(R.id.digital_clock)),
+                                    (int) context.getResources().
+                                            getDimension(R.dimen.main_ampm_font_size)
+                            );
+                        }
                         mAdapter.loadCitiesDb(context);
                         mAdapter.notifyDataSetChanged();
                     }
                 }
+                Utils.setQuarterHourUpdater(mHandler, mQuarterHourUpdater);
             }
-            if (changed || action.equals(Alarms.ALARM_DONE_ACTION)
-                    || action.equals(Alarms.ALARM_SNOOZE_CANCELLED)) {
+            if (changed || action.equals(AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED)) {
                 Utils.refreshAlarm(getActivity(), mClockFrame);
-            }
-            if (changed) {
-                mQuarterlyIntent = Utils.refreshAlarmOnQuarterHour(getActivity(), mQuarterlyIntent);
             }
         }
     };
 
     private final Handler mHandler = new Handler();
 
+    // Thread that runs on every quarter-hour and refreshes the date.
+    private final Runnable mQuarterHourUpdater = new Runnable() {
+        @Override
+        public void run() {
+            // Update the main and world clock dates
+            Utils.updateDate(mDateFormat, mDateFormatForAccessibility, mClockFrame);
+            if (mAdapter != null) {
+                mAdapter.notifyDataSetChanged();
+            }
+            Utils.setQuarterHourUpdater(mHandler, mQuarterHourUpdater);
+        }
+    };
+
     public ClockFragment() {
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle icicle) {
+            Bundle icicle) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.clock_fragment, container, false);
-        mButtons = v.findViewById(R.id.clock_buttons);
         if (icicle != null) {
             mButtonsHidden = icicle.getBoolean(BUTTONS_HIDDEN_KEY, false);
         }
-        mList = (ListView)v.findViewById(R.id.cities);
+        mList = (ListView) v.findViewById(R.id.cities);
         mList.setDivider(null);
-        View headerView = inflater.inflate(R.layout.blank_header_view, mList, false);
-        mList.addHeaderView(headerView);
-        mClockFrame = inflater.inflate(R.layout.main_clock_frame, mList, false);
-        mDigitalClock = mClockFrame.findViewById(R.id.digital_clock);
-        mAnalogClock = mClockFrame.findViewById(R.id.analog_clock);
-        mList.addHeaderView(mClockFrame, null, false);
-        View footerView = inflater.inflate(R.layout.blank_footer_view, mList, false);
-        footerView.setBackgroundResource(R.color.blackish);
-        mList.addFooterView(footerView);
-        mAdapter = new WorldClockAdapter(getActivity());
-        mList.setAdapter(mAdapter);
-        mList.setOnTouchListener(new OnTouchListener() {
-            private final float MAX_MOVEMENT_ALLOWED = 20;
-            private float mLastTouchX, mLastTouchY;
+
+        OnTouchListener longPressNightMode = new OnTouchListener() {
+            private float mMaxMovementAllowed = -1;
+            private int mLongPressTimeout = -1;
+            private float mLastTouchX
+                    ,
+                    mLastTouchY;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+                if (mMaxMovementAllowed == -1) {
+                    mMaxMovementAllowed = ViewConfiguration.get(getActivity()).getScaledTouchSlop();
+                    mLongPressTimeout = ViewConfiguration.getLongPressTimeout();
+                }
+
                 switch (event.getAction()) {
                     case (MotionEvent.ACTION_DOWN):
                         long time = Utils.getTimeNow();
@@ -132,14 +148,14 @@ public class ClockFragment extends DeskClockFragment implements OnSharedPreferen
                             public void run() {
                                 startActivity(new Intent(getActivity(), ScreensaverActivity.class));
                             }
-                        }, ViewConfiguration.getLongPressTimeout());
+                        }, mLongPressTimeout);
                         mLastTouchX = event.getX();
                         mLastTouchY = event.getY();
-                        break;
+                        return true;
                     case (MotionEvent.ACTION_MOVE):
-                        float xDiff = Math.abs(event.getX()-mLastTouchX);
-                        float yDiff = Math.abs(event.getY()-mLastTouchY);
-                        if (xDiff >= MAX_MOVEMENT_ALLOWED || yDiff >= MAX_MOVEMENT_ALLOWED) {
+                        float xDiff = Math.abs(event.getX() - mLastTouchX);
+                        float yDiff = Math.abs(event.getY() - mLastTouchY);
+                        if (xDiff >= mMaxMovementAllowed || yDiff >= mMaxMovementAllowed) {
                             mHandler.removeCallbacksAndMessages(null);
                         }
                         break;
@@ -148,75 +164,108 @@ public class ClockFragment extends DeskClockFragment implements OnSharedPreferen
                 }
                 return false;
             }
-        });
+        };
+
+        // On tablet landscape, the clock frame will be a distinct view. Otherwise, it'll be added
+        // on as a header to the main listview.
+        mClockFrame = v.findViewById(R.id.main_clock_left_pane);
+        mHairline = v.findViewById(R.id.hairline);
+        if (mClockFrame == null) {
+            mClockFrame = inflater.inflate(R.layout.main_clock_frame, mList, false);
+            mHairline = mClockFrame.findViewById(R.id.hairline);
+            mHairline.setVisibility(View.VISIBLE);
+            mList.addHeaderView(mClockFrame, null, false);
+        } else {
+            mHairline.setVisibility(View.GONE);
+            // The main clock frame needs its own touch listener for night mode now.
+            v.setOnTouchListener(longPressNightMode);
+        }
+        mList.setOnTouchListener(longPressNightMode);
+
+        // If the current layout has a fake overflow menu button, let the parent
+        // activity set up its click and touch listeners.
+        View menuButton = v.findViewById(R.id.menu_button);
+        if (menuButton != null) {
+            setupFakeOverflowMenuButton(menuButton);
+        }
+
+        mDigitalClock = mClockFrame.findViewById(R.id.digital_clock);
+        mAnalogClock = mClockFrame.findViewById(R.id.analog_clock);
+        Utils.setTimeFormat((TextClock) (mDigitalClock.findViewById(R.id.digital_clock)),
+                (int) getResources().getDimension(R.dimen.main_ampm_font_size));
+        View footerView = inflater.inflate(R.layout.blank_footer_view, mList, false);
+        mList.addFooterView(footerView, null, false);
+        mAdapter = new WorldClockAdapter(getActivity());
+        if (mAdapter.getCount() == 0) {
+            mHairline.setVisibility(View.GONE);
+        }
+        mList.setAdapter(mAdapter);
+
         mPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
         mDefaultClockStyle = getActivity().getResources().getString(R.string.default_clock_style);
         return v;
     }
 
     @Override
-    public void onResume () {
+    public void onResume() {
         super.onResume();
+
+        final DeskClock activity = (DeskClock) getActivity();
+        if (activity.getSelectedTab() == DeskClock.CLOCK_TAB_INDEX) {
+            setFabAppearance();
+            setLeftRightButtonAppearance();
+        }
+
         mPrefs.registerOnSharedPreferenceChangeListener(this);
         mDateFormat = getString(R.string.abbrev_wday_month_day_no_year);
         mDateFormatForAccessibility = getString(R.string.full_wday_month_day_no_year);
 
-        mQuarterlyIntent = Utils.startAlarmOnQuarterHour(getActivity());
+        Utils.setQuarterHourUpdater(mHandler, mQuarterHourUpdater);
         // Besides monitoring when quarter-hour changes, monitor other actions that
         // effect clock time
-        IntentFilter filter = new IntentFilter(Utils.ACTION_ON_QUARTER_HOUR);
-        filter.addAction(Alarms.ALARM_DONE_ACTION);
-        filter.addAction(Alarms.ALARM_SNOOZE_CANCELLED);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED);
         filter.addAction(Intent.ACTION_TIME_CHANGED);
         filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         filter.addAction(Intent.ACTION_LOCALE_CHANGED);
-        getActivity().registerReceiver(mIntentReceiver, filter);
-
-        mButtons.setAlpha(mButtonsHidden ? 0 : 1);
+        activity.registerReceiver(mIntentReceiver, filter);
 
         // Resume can invoked after changing the cities list or a change in locale
         if (mAdapter != null) {
-            mAdapter.loadCitiesDb(getActivity());
-            mAdapter.reloadData(getActivity());
+            mAdapter.loadCitiesDb(activity);
+            mAdapter.reloadData(activity);
         }
         // Resume can invoked after changing the clock style.
-        View clockView = Utils.setClockStyle(getActivity(), mDigitalClock, mAnalogClock,
+        View clockView = Utils.setClockStyle(activity, mDigitalClock, mAnalogClock,
                 SettingsActivity.KEY_CLOCK_STYLE);
         mClockStyle = (clockView == mDigitalClock ?
                 Utils.CLOCK_TYPE_DIGITAL : Utils.CLOCK_TYPE_ANALOG);
+
+        // Center the main clock frame if cities are empty.
+        if (getView().findViewById(R.id.main_clock_left_pane) != null && mAdapter.getCount() == 0) {
+            mList.setVisibility(View.GONE);
+        } else {
+            mList.setVisibility(View.VISIBLE);
+        }
         mAdapter.notifyDataSetChanged();
 
-        Utils.updateDate(mDateFormat, mDateFormatForAccessibility,mClockFrame);
-        Utils.refreshAlarm(getActivity(), mClockFrame);
+        Utils.updateDate(mDateFormat, mDateFormatForAccessibility, mClockFrame);
+        Utils.refreshAlarm(activity, mClockFrame);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         mPrefs.unregisterOnSharedPreferenceChangeListener(this);
-        Utils.cancelAlarmOnQuarterHour(getActivity(), mQuarterlyIntent);
-        getActivity().unregisterReceiver(mIntentReceiver);
+        Utils.cancelQuarterHourUpdater(mHandler, mQuarterHourUpdater);
+        Activity activity = getActivity();
+        activity.unregisterReceiver(mIntentReceiver);
     }
 
     @Override
-    public void onSaveInstanceState (Bundle outState) {
+    public void onSaveInstanceState(Bundle outState) {
         outState.putBoolean(BUTTONS_HIDDEN_KEY, mButtonsHidden);
         super.onSaveInstanceState(outState);
-    }
-
-    public void showButtons(boolean show) {
-        if (mButtons == null) {
-            return;
-        }
-        if (show && mButtonsHidden) {
-            mButtons.startAnimation(
-                    AnimationUtils.loadAnimation(getActivity(), R.anim.unhide));
-            mButtonsHidden = false;
-        } else if (!show && !mButtonsHidden) {
-            mButtons.startAnimation(
-                    AnimationUtils.loadAnimation(getActivity(), R.anim.hide));
-            mButtonsHidden = true;
-        }
     }
 
     @Override
@@ -226,4 +275,32 @@ public class ClockFragment extends DeskClockFragment implements OnSharedPreferen
             mAdapter.notifyDataSetChanged();
         }
     }
- }
+
+    @Override
+    public void onFabClick(View view) {
+        final Activity activity = getActivity();
+        startActivity(new Intent(activity, CitiesActivity.class));
+    }
+
+    @Override
+    public void setFabAppearance() {
+        final DeskClock activity = (DeskClock) getActivity();
+        if (mFab == null || activity.getSelectedTab() != DeskClock.CLOCK_TAB_INDEX) {
+            return;
+        }
+        mFab.setVisibility(View.VISIBLE);
+        mFab.setImageResource(R.drawable.ic_globe);
+        mFab.setContentDescription(getString(R.string.button_cities));
+    }
+
+    @Override
+    public void setLeftRightButtonAppearance() {
+        final DeskClock activity = (DeskClock) getActivity();
+        if (mLeftButton == null || mRightButton == null ||
+                activity.getSelectedTab() != DeskClock.CLOCK_TAB_INDEX) {
+            return;
+        }
+        mLeftButton.setVisibility(View.INVISIBLE);
+        mRightButton.setVisibility(View.INVISIBLE);
+    }
+}

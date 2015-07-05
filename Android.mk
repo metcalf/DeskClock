@@ -16,6 +16,8 @@ LOCAL_SDK_VERSION := current
 
 LOCAL_PROGUARD_FLAG_FILES := proguard.flags
 
+LOCAL_AAPT_FLAGS := --auto-add-overlay
+
 include $(BUILD_PACKAGE)
 
 # Use the following include to make our test apk.

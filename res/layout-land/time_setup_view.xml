@@ -13,128 +13,81 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
+
     <LinearLayout
-        android:layoutDirection="ltr"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <com.android.deskclock.timer.TimerView
-            android:id="@+id/timer_time_text"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <!-- This nested ltr layout cannot be combined with the parent because
+             in RTL, the Keypad and Timer value should swap. -->
+        <LinearLayout
+            android:id="@+id/timer_time_display"
             android:layout_width="0dip"
-            android:layout_weight="2"
-            android:layout_height="wrap_content"
-            android:paddingTop="@dimen/medium_font_padding"
-            android:paddingBottom="@dimen/medium_font_padding"
-            android:paddingLeft="@dimen/timer_padding_left"
-            android:paddingStart="@dimen/timer_padding_left"
-            android:layout_gravity="center"
-            android:gravity="top"
-            android:baselineAligned="false">
-            <com.android.deskclock.ZeroTopPaddingTextView
-                android:id="@+id/hours_ones"
-                android:singleLine="true"
-                android:ellipsize="none"
-                style="@style/medium_bold"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="@color/clock_white"/>
-
-            <com.android.deskclock.ZeroTopPaddingTextView
-                android:id="@+id/hours_label"
-                android:singleLine="true"
-                android:ellipsize="none"
-                style="@style/label"
-                android:layout_gravity="top"
-                android:contentDescription="@string/hours_label_description"
-                android:text="@string/hours_label"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="@color/clock_white"/>
-
-            <com.android.deskclock.ZeroTopPaddingTextView
-                android:id="@+id/minutes_tens"
-                android:singleLine="true"
-                android:ellipsize="none"
-                style="@style/medium_bold"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="@color/clock_white"/>
-
-            <com.android.deskclock.ZeroTopPaddingTextView
-                android:id="@+id/minutes_ones"
-                android:singleLine="true"
-                android:ellipsize="none"
-                style="@style/medium_bold"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="@color/clock_white"/>
-            <com.android.deskclock.ZeroTopPaddingTextView
-                android:id="@+id/minutes_label"
-                android:singleLine="true"
-                android:ellipsize="none"
-                style="@style/label"
-                android:contentDescription="@string/minutes_label_description"
-                android:text="@string/minutes_label"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="@color/clock_white"/>
-
-            <com.android.deskclock.ZeroTopPaddingTextView
-                android:id="@+id/seconds"
-                android:singleLine="true"
-                android:ellipsize="none"
-                style="@style/medium_light"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="@color/clock_white"/>
-
-            <com.android.deskclock.ZeroTopPaddingTextView
-                android:id="@+id/seconds_label"
-                android:singleLine="true"
-                android:ellipsize="none"
-                style="@style/label"
-                android:layout_gravity="top"
-                android:contentDescription="@string/seconds_label_description"
-                android:text="@string/seconds_label"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:textColor="@color/clock_white"/>
-
-        </com.android.deskclock.timer.TimerView>
-        <ImageButton
-            android:id="@+id/delete"
-            android:layout_width="0dip"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_weight="3"
+            android:layout_marginBottom="@dimen/footer_button_size"
+            android:layoutDirection="ltr"
             android:gravity="center"
-            android:layout_gravity="center"
-            android:paddingBottom="@dimen/body_font_padding"
-            android:src="@drawable/ic_backspace"
-            android:background="@drawable/item_background"
-            android:contentDescription="@string/timer_delete"
-            android:layout_height="match_parent" />
+            android:orientation="vertical"
+            >
+
+            <com.android.deskclock.timer.TimerView
+                android:id="@+id/timer_time_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <include layout="@layout/timer_h_mm_ss_view" />
+
+                <ImageButton
+                    android:id="@+id/delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/timer_setup_delete_start_margin"
+                    android:padding="@dimen/timer_setup_delete_padding"
+                    android:contentDescription="@string/timer_delete"
+                    android:src="@drawable/ic_backspace"
+                    android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+            </com.android.deskclock.timer.TimerView>
+
+            <View
+                android:id="@+id/divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dip"
+                android:layout_marginBottom="8dip"
+                android:background="@color/dialog_gray" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dip"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:orientation="vertical" >
+
+            <include
+                android:id="@+id/first"
+                layout="@layout/three_keys_view" />
+            <include
+                android:id="@+id/second"
+                layout="@layout/three_keys_view" />
+            <include
+                android:id="@+id/third"
+                layout="@layout/three_keys_view" />
+            <include
+                android:id="@+id/fourth"
+                layout="@layout/three_keys_view" />
+
+        </LinearLayout>
+
     </LinearLayout>
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dip"
-        android:layout_marginBottom="8dip"
-        android:background="#28ffffff" />
-    <include layout="@layout/three_keys_view"
-        android:id="@+id/first" />
 
-    <include layout="@layout/three_keys_view"
-        android:id="@+id/second"/>
+    <include layout="@layout/timer_cancel_button" />
 
-    <include layout="@layout/three_keys_view"
-        android:id="@+id/third"/>
-
-    <include layout="@layout/three_keys_view"
-        android:id="@+id/fourth" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dip"
-        android:layout_marginTop="16dip" />
-</LinearLayout>
+</FrameLayout>

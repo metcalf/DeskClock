@@ -14,22 +14,38 @@
      limitations under the License.
 -->
 
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingTop="@dimen/medium_space_top"
-    android:paddingBottom="@dimen/medium_space_bottom"
-    android:orientation="vertical">
+    android:paddingTop="@dimen/medium_space_top">
+
+    <com.android.deskclock.widget.EllipsizeLayout
+        android:id="@+id/city_name_layout"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_gravity="left|center_vertical" >
+
+        <include layout="@layout/world_clock_label"/>
+
+    </com.android.deskclock.widget.EllipsizeLayout>
+
     <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <include layout="@layout/desk_clock_time_small"
+        android:layout_width="wrap_content"
+        android:layout_gravity="right|center_vertical"
+        android:layout_height="wrap_content">
+
+        <TextClock
             android:id="@+id/digital_clock"
-            android:gravity="center"
-            android:layout_gravity="center"
+            android:format12Hour="@string/world_clock_12_hours_format"
+            android:format24Hour="@string/clock_24_hours_format"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            style="@style/medium_light"
+            android:textColor="@color/clock_white"
+            android:baselineAligned="true"
+            android:layout_gravity="center"
+            android:gravity="center" />
         <com.android.deskclock.AnalogClock
             android:id="@+id/analog_clock"
             android:gravity="center"
@@ -38,17 +54,9 @@
             android:layout_gravity="center_horizontal"
             android:dial="@drawable/clock_analog_dial_mipmap"
             android:hand_hour="@drawable/clock_analog_hour_mipmap"
-            android:hand_minute="@drawable/clock_analog_minute_mipmap"/>
+            android:hand_minute="@drawable/clock_analog_minute_mipmap"
+            android:layout_marginBottom="@dimen/bottom_text_spacing_analog_small"/>
     </FrameLayout>
-    <com.android.deskclock.widget.EllipsizeLayout
-        android:id="@+id/city_name_layout"
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent"
-        android:layout_marginTop="@dimen/label_margin_small"
-        android:layout_marginLeft="@dimen/label_margin_small"
-        android:layout_marginStart="@dimen/label_margin_small"
-        android:gravity="center"
-        >
-        <include layout="@layout/world_clock_label"/>
-    </com.android.deskclock.widget.EllipsizeLayout>
-</LinearLayout>
+
+
+</FrameLayout>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,208 @@
  * limitations under the License.
  */
 
-package com.android.deskclock;
+package com.android.deskclock.provider;
 
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.CursorLoader;
+import android.content.Intent;
 import android.database.Cursor;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.provider.BaseColumns;
 
-import java.text.DateFormatSymbols;
+import com.android.deskclock.R;
+
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
-public final class Alarm implements Parcelable {
+public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
+    /**
+     * Alarms start with an invalid id when it hasn't been saved to the database.
+     */
+    public static final long INVALID_ID = -1;
 
-    //////////////////////////////
-    // Parcelable apis
-    //////////////////////////////
-    public static final Parcelable.Creator<Alarm> CREATOR
-            = new Parcelable.Creator<Alarm>() {
+    /**
+     * The default sort order for this table
+     */
+    private static final String DEFAULT_SORT_ORDER =
+            HOUR + ", " +
+            MINUTES + " ASC" + ", " +
+            _ID + " DESC";
+
+    private static final String[] QUERY_COLUMNS = {
+            _ID,
+            HOUR,
+            MINUTES,
+            DAYS_OF_WEEK,
+            ENABLED,
+            VIBRATE,
+            LABEL,
+            RINGTONE,
+            DELETE_AFTER_USE,
+            LIGHT_ENABLED,
+            LIGHT_COLOR,
+            LIGHT_TIME
+    };
+
+    /**
+     * These save calls to cursor.getColumnIndexOrThrow()
+     * THEY MUST BE KEPT IN SYNC WITH ABOVE QUERY COLUMNS
+     */
+    private static final int ID_INDEX = 0;
+    private static final int HOUR_INDEX = 1;
+    private static final int MINUTES_INDEX = 2;
+    private static final int DAYS_OF_WEEK_INDEX = 3;
+    private static final int ENABLED_INDEX = 4;
+    private static final int VIBRATE_INDEX = 5;
+    private static final int LABEL_INDEX = 6;
+    private static final int RINGTONE_INDEX = 7;
+    private static final int DELETE_AFTER_USE_INDEX = 8;
+    private static final int LIGHT_ENABLED_INDEX = 9;
+    private static final int LIGHT_COLOR_INDEX = 10;
+    private static final int LIGHT_TIME_INDEX = 11;
+
+    private static final int COLUMN_COUNT = LIGHT_TIME_INDEX + 1;
+
+    public static ContentValues createContentValues(Alarm alarm) {
+        ContentValues values = new ContentValues(COLUMN_COUNT);
+        if (alarm.id != INVALID_ID) {
+            values.put(ClockContract.AlarmsColumns._ID, alarm.id);
+        }
+
+        values.put(ENABLED, alarm.enabled ? 1 : 0);
+        values.put(HOUR, alarm.hour);
+        values.put(MINUTES, alarm.minutes);
+        values.put(DAYS_OF_WEEK, alarm.daysOfWeek.getBitSet());
+        values.put(VIBRATE, alarm.vibrate ? 1 : 0);
+        values.put(LABEL, alarm.label);
+        values.put(DELETE_AFTER_USE, alarm.deleteAfterUse);
+        if (alarm.alert == null) {
+            // We want to put null, so default alarm changes
+            values.putNull(RINGTONE);
+        } else {
+            values.put(RINGTONE, alarm.alert.toString());
+        }
+
+        values.put(LIGHT_ENABLED, alarm.lightEnabled);
+        values.put(LIGHT_COLOR, alarm.lightColor);
+        values.put(LIGHT_TIME, alarm.lightTime);
+
+        return values;
+    }
+
+    public static Intent createIntent(String action, long alarmId) {
+        return new Intent(action).setData(getUri(alarmId));
+    }
+
+    public static Intent createIntent(Context context, Class<?> cls, long alarmId) {
+        return new Intent(context, cls).setData(getUri(alarmId));
+    }
+
+    public static Uri getUri(long alarmId) {
+        return ContentUris.withAppendedId(CONTENT_URI, alarmId);
+    }
+
+    public static long getId(Uri contentUri) {
+        return ContentUris.parseId(contentUri);
+    }
+
+    /**
+     * Get alarm cursor loader for all alarms.
+     *
+     * @param context to query the database.
+     * @return cursor loader with all the alarms.
+     */
+    public static CursorLoader getAlarmsCursorLoader(Context context) {
+        return new CursorLoader(context, ClockContract.AlarmsColumns.CONTENT_URI,
+                QUERY_COLUMNS, null, null, DEFAULT_SORT_ORDER);
+    }
+
+    /**
+     * Get alarm by id.
+     *
+     * @param contentResolver to perform the query on.
+     * @param alarmId for the desired alarm.
+     * @return alarm if found, null otherwise
+     */
+    public static Alarm getAlarm(ContentResolver contentResolver, long alarmId) {
+        Cursor cursor = contentResolver.query(getUri(alarmId), QUERY_COLUMNS, null, null, null);
+        Alarm result = null;
+        if (cursor == null) {
+            return result;
+        }
+
+        try {
+            if (cursor.moveToFirst()) {
+                result = new Alarm(cursor);
+            }
+        } finally {
+            cursor.close();
+        }
+
+        return result;
+    }
+
+    /**
+     * Get all alarms given conditions.
+     *
+     * @param contentResolver to perform the query on.
+     * @param selection A filter declaring which rows to return, formatted as an
+     *         SQL WHERE clause (excluding the WHERE itself). Passing null will
+     *         return all rows for the given URI.
+     * @param selectionArgs You may include ?s in selection, which will be
+     *         replaced by the values from selectionArgs, in the order that they
+     *         appear in the selection. The values will be bound as Strings.
+     * @return list of alarms matching where clause or empty list if none found.
+     */
+    public static List<Alarm> getAlarms(ContentResolver contentResolver,
+            String selection, String ... selectionArgs) {
+        Cursor cursor  = contentResolver.query(CONTENT_URI, QUERY_COLUMNS,
+                selection, selectionArgs, null);
+        List<Alarm> result = new LinkedList<Alarm>();
+        if (cursor == null) {
+            return result;
+        }
+
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    result.add(new Alarm(cursor));
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            cursor.close();
+        }
+
+        return result;
+    }
+
+    public static Alarm addAlarm(ContentResolver contentResolver, Alarm alarm) {
+        ContentValues values = createContentValues(alarm);
+        Uri uri = contentResolver.insert(CONTENT_URI, values);
+        alarm.id = getId(uri);
+        return alarm;
+    }
+
+    public static boolean updateAlarm(ContentResolver contentResolver, Alarm alarm) {
+        if (alarm.id == Alarm.INVALID_ID) return false;
+        ContentValues values = createContentValues(alarm);
+        long rowsUpdated = contentResolver.update(getUri(alarm.id), values, null, null);
+        return rowsUpdated == 1;
+    }
+
+    public static boolean deleteAlarm(ContentResolver contentResolver, long alarmId) {
+        if (alarmId == INVALID_ID) return false;
+        int deletedRows = contentResolver.delete(getUri(alarmId), "", null);
+        return deletedRows == 1;
+    }
+
+    public static final Parcelable.Creator<Alarm> CREATOR = new Parcelable.Creator<Alarm>() {
         public Alarm createFromParcel(Parcel p) {
             return new Alarm(p);
         }
@@ -45,155 +225,146 @@ public final class Alarm implements Parcelable {
         }
     };
 
-    public int describeContents() {
-        return 0;
-    }
-
-    public void writeToParcel(Parcel p, int flags) {
-        p.writeInt(id);
-        p.writeInt(enabled ? 1 : 0);
-        p.writeInt(hour);
-        p.writeInt(minutes);
-        p.writeInt(daysOfWeek.getCoded());
-        p.writeLong(time);
-        p.writeInt(vibrate ? 1 : 0);
-        p.writeString(label);
-        p.writeParcelable(alert, flags);
-        p.writeInt(silent ? 1 : 0);
-        p.writeInt(lightEnabled ? 1 : 0);
-        p.writeInt(lightColor);
-        p.writeInt(lightTime);
-    }
-    //////////////////////////////
-    // end Parcelable apis
-    //////////////////////////////
-
-    //////////////////////////////
-    // Column definitions
-    //////////////////////////////
-    public static class Columns implements BaseColumns {
-        /**
-         * The content:// style URL for this table
-         */
-        public static final Uri CONTENT_URI =
-                Uri.parse("content://com.android.deskclock/alarm");
-
-        /**
-         * Hour in 24-hour localtime 0 - 23.
-         * <P>Type: INTEGER</P>
-         */
-        public static final String HOUR = "hour";
-
-        /**
-         * Minutes in localtime 0 - 59
-         * <P>Type: INTEGER</P>
-         */
-        public static final String MINUTES = "minutes";
-
-        /**
-         * Days of week coded as integer
-         * <P>Type: INTEGER</P>
-         */
-        public static final String DAYS_OF_WEEK = "daysofweek";
-
-        /**
-         * Alarm time in UTC milliseconds from the epoch.
-         * <P>Type: INTEGER</P>
-         */
-        public static final String ALARM_TIME = "alarmtime";
-
-        /**
-         * True if alarm is active
-         * <P>Type: BOOLEAN</P>
-         */
-        public static final String ENABLED = "enabled";
-
-        /**
-         * True if alarm should vibrate
-         * <P>Type: BOOLEAN</P>
-         */
-        public static final String VIBRATE = "vibrate";
-
-        /**
-         * Message to show when alarm triggers
-         * Note: not currently used
-         * <P>Type: STRING</P>
-         */
-        public static final String MESSAGE = "message";
-
-        /**
-         * Audio alert to play when alarm triggers
-         * <P>Type: STRING</P>
-         */
-        public static final String ALERT = "alert";
-
-        /**
-         * Light is enabled?
-         */
-        public static final String LIGHT_ENABLED = "light_enabled";
-
-        /**
-         * Color light alarm should trigger
-         * <P>Type: INTEGER</P>
-         */
-        public static final String LIGHT_COLOR = "light_color";
-
-        /**
-         * Dimming time for light
-         * <P>Type: INTEGER</P>
-         */
-        public static final String LIGHT_TIME = "light_time";
-
-        /**
-         * The default sort order for this table
-         */
-        public static final String DEFAULT_SORT_ORDER =
-                HOUR + ", " + MINUTES + " ASC" + ", " + _ID + " DESC";
-
-        // Used when filtering enabled alarms.
-        public static final String WHERE_ENABLED = ENABLED + "=1";
-
-        static final String[] ALARM_QUERY_COLUMNS = {
-                _ID, HOUR, MINUTES, DAYS_OF_WEEK, ALARM_TIME,
-                ENABLED, VIBRATE, MESSAGE, ALERT, LIGHT_ENABLED, LIGHT_COLOR, LIGHT_TIME};
-
-        /**
-         * These save calls to cursor.getColumnIndexOrThrow()
-         * THEY MUST BE KEPT IN SYNC WITH ABOVE QUERY COLUMNS
-         */
-        public static final int ALARM_ID_INDEX = 0;
-        public static final int ALARM_HOUR_INDEX = 1;
-        public static final int ALARM_MINUTES_INDEX = 2;
-        public static final int ALARM_DAYS_OF_WEEK_INDEX = 3;
-        public static final int ALARM_TIME_INDEX = 4;
-        public static final int ALARM_ENABLED_INDEX = 5;
-        public static final int ALARM_VIBRATE_INDEX = 6;
-        public static final int ALARM_MESSAGE_INDEX = 7;
-        public static final int ALARM_ALERT_INDEX = 8;
-        public static final int ALARM_LIGHT_ENABLED_INDEX = 9;
-        public static final int ALARM_LIGHT_COLOR_INDEX = 10;
-        public static final int ALARM_LIGHT_TIME_INDEX = 11;
-
-
-    }
-    //////////////////////////////
-    // End column definitions
-    //////////////////////////////
-
     // Public fields
-    public int id;
+    // TODO: Refactor instance names
+    public long id;
     public boolean enabled;
     public int hour;
     public int minutes;
     public DaysOfWeek daysOfWeek;
-    public long time;
     public boolean vibrate;
     public boolean lightEnabled;
     public int lightColor;
     public int lightTime;
     public String label;
     public Uri alert;
-    public boolean silent;
+    public boolean deleteAfterUse;
+
+    // Creates a default alarm at the current time.
+    public Alarm() {
+        this(0, 0);
+    }
+
+    public Alarm(int hour, int minutes) {
+        this.id = INVALID_ID;
+        this.hour = hour;
+        this.minutes = minutes;
+        this.vibrate = true;
+        this.lightEnabled = false;
+        this.lightColor = 0;
+        this.lightTime = 0;
+        this.daysOfWeek = new DaysOfWeek(0);
+        this.label = "";
+        this.alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        this.deleteAfterUse = false;
+    }
+
+    public Alarm(Cursor c) {
+        id = c.getLong(ID_INDEX);
+        enabled = c.getInt(ENABLED_INDEX) == 1;
+        hour = c.getInt(HOUR_INDEX);
+        minutes = c.getInt(MINUTES_INDEX);
+        daysOfWeek = new DaysOfWeek(c.getInt(DAYS_OF_WEEK_INDEX));
+        vibrate = c.getInt(VIBRATE_INDEX) == 1;
+        label = c.getString(LABEL_INDEX);
+        deleteAfterUse = c.getInt(DELETE_AFTER_USE_INDEX) == 1;
+        lightEnabled = c.getInt(LIGHT_ENABLED_INDEX) == 1;
+        lightColor = c.getInt(LIGHT_COLOR_INDEX);
+        lightTime = c.getInt(LIGHT_TIME_INDEX);
+
+        if (c.isNull(RINGTONE_INDEX)) {
+            // Should we be saving this with the current ringtone or leave it null
+            // so it changes when user changes default ringtone?
+            alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        } else {
+            alert = Uri.parse(c.getString(RINGTONE_INDEX));
+        }
+    }
+
+    Alarm(Parcel p) {
+        id = p.readLong();
+        enabled = p.readInt() == 1;
+        hour = p.readInt();
+        minutes = p.readInt();
+        daysOfWeek = new DaysOfWeek(p.readInt());
+        vibrate = p.readInt() == 1;
+        label = p.readString();
+        alert = (Uri) p.readParcelable(null);
+        deleteAfterUse = p.readInt() == 1;
+        lightEnabled = p.readInt() == 1;
+        lightColor = p.readInt();
+        lightTime = p.readInt();
+    }
+
+    public String getLabelOrDefault(Context context) {
+        if (label == null || label.length() == 0) {
+            return context.getString(R.string.default_label);
+        }
+        return label;
+    }
+
+    public void writeToParcel(Parcel p, int flags) {
+        p.writeLong(id);
+        p.writeInt(enabled ? 1 : 0);
+        p.writeInt(hour);
+        p.writeInt(minutes);
+        p.writeInt(daysOfWeek.getBitSet());
+        p.writeInt(vibrate ? 1 : 0);
+        p.writeString(label);
+        p.writeParcelable(alert, flags);
+        p.writeInt(deleteAfterUse ? 1 : 0);
+        p.writeInt(lightEnabled ? 1 : 0);
+        p.writeInt(lightColor);
+        p.writeInt(lightTime);
+    }
+
+    public int describeContents() {
+        return 0;
+    }
+
+    public AlarmInstance createInstanceAfter(Calendar time) {
+        Calendar nextInstanceTime = Calendar.getInstance();
+        nextInstanceTime.set(Calendar.YEAR, time.get(Calendar.YEAR));
+        nextInstanceTime.set(Calendar.MONTH, time.get(Calendar.MONTH));
+        nextInstanceTime.set(Calendar.DAY_OF_MONTH, time.get(Calendar.DAY_OF_MONTH));
+        nextInstanceTime.set(Calendar.HOUR_OF_DAY, hour);
+        nextInstanceTime.set(Calendar.MINUTE, minutes);
+        nextInstanceTime.set(Calendar.SECOND, 0);
+        nextInstanceTime.set(Calendar.MILLISECOND, 0);
+
+        // If we are still behind the passed in time, then add a day
+        if (nextInstanceTime.getTimeInMillis() <= time.getTimeInMillis()) {
+            nextInstanceTime.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        // The day of the week might be invalid, so find next valid one
+        int addDays = daysOfWeek.calculateDaysToNextAlarm(nextInstanceTime);
+        if (addDays > 0) {
+            nextInstanceTime.add(Calendar.DAY_OF_WEEK, addDays);
+        }
+
+        AlarmInstance result = new AlarmInstance(nextInstanceTime, id);
+        result.mVibrate = vibrate;
+        result.mLabel = label;
+        result.mRingtone = alert;
+        result.mLightEnabled = lightEnabled;
+        result.mLightColor = lightColor;
+        result.mLightTime = lightTime;
+
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Alarm)) return false;
+        final Alarm other = (Alarm) o;
+        return id == other.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.valueOf(id).hashCode();
+    }
 
     @Override
     public String toString() {
@@ -204,266 +375,12 @@ public final class Alarm implements Parcelable {
                 ", hour=" + hour +
                 ", minutes=" + minutes +
                 ", daysOfWeek=" + daysOfWeek +
-                ", time=" + time +
                 ", vibrate=" + vibrate +
                 ", lightEnabled=" + lightEnabled +
                 ", lightColor=" + lightColor +
                 ", lightTime=" + lightTime +
                 ", label='" + label + '\'' +
-                ", silent=" + silent +
+                ", deleteAfterUse=" + deleteAfterUse +
                 '}';
-    }
-
-    public Alarm(Cursor c) {
-        id = c.getInt(Columns.ALARM_ID_INDEX);
-        enabled = c.getInt(Columns.ALARM_ENABLED_INDEX) == 1;
-        hour = c.getInt(Columns.ALARM_HOUR_INDEX);
-        minutes = c.getInt(Columns.ALARM_MINUTES_INDEX);
-        daysOfWeek = new DaysOfWeek(c.getInt(Columns.ALARM_DAYS_OF_WEEK_INDEX));
-        time = c.getLong(Columns.ALARM_TIME_INDEX);
-        vibrate = c.getInt(Columns.ALARM_VIBRATE_INDEX) == 1;
-        label = c.getString(Columns.ALARM_MESSAGE_INDEX);
-        String alertString = c.getString(Columns.ALARM_ALERT_INDEX);
-        lightEnabled = c.getInt(Columns.ALARM_LIGHT_ENABLED_INDEX) == 1;
-        lightColor = c.getInt(Columns.ALARM_LIGHT_COLOR_INDEX);
-        lightTime = c.getInt(Columns.ALARM_LIGHT_TIME_INDEX);
-        if (Alarms.ALARM_ALERT_SILENT.equals(alertString)) {
-            if (Log.LOGV) {
-                Log.v("Alarm is marked as silent");
-            }
-            silent = true;
-        } else {
-            if (alertString != null && alertString.length() != 0) {
-                alert = Uri.parse(alertString);
-            }
-
-            // If the database alert is null or it failed to parse, use the
-            // default alert.
-            if (alert == null) {
-                alert = RingtoneManager.getDefaultUri(
-                        RingtoneManager.TYPE_ALARM);
-            }
-        }
-    }
-
-    public Alarm(Parcel p) {
-        id = p.readInt();
-        enabled = p.readInt() == 1;
-        hour = p.readInt();
-        minutes = p.readInt();
-        daysOfWeek = new DaysOfWeek(p.readInt());
-        time = p.readLong();
-        vibrate = p.readInt() == 1;
-        label = p.readString();
-        alert = (Uri) p.readParcelable(null);
-        silent = p.readInt() == 1;
-        lightEnabled = p.readInt() == 1;
-        lightColor = p.readInt();
-        lightTime = p.readInt();
-    }
-
-    // Creates a default alarm at the current time.
-    public Alarm() {
-        id = -1;
-        hour = 0;
-        minutes = 0;
-        vibrate = true;
-        lightEnabled = false;
-        lightColor = 0;
-        lightTime = 0;
-        daysOfWeek = new DaysOfWeek(0);
-        label = "";
-        alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-    }
-
-    public String getLabelOrDefault(Context context) {
-        if (label == null || label.length() == 0) {
-            return context.getString(R.string.default_label);
-        }
-        return label;
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Alarm)) return false;
-        final Alarm other = (Alarm) o;
-        return id == other.id;
-    }
-
-
-    /*
-     * Days of week code as a single int.
-     * 0x00: no day
-     * 0x01: Monday
-     * 0x02: Tuesday
-     * 0x04: Wednesday
-     * 0x08: Thursday
-     * 0x10: Friday
-     * 0x20: Saturday
-     * 0x40: Sunday
-     */
-    static final class DaysOfWeek {
-
-        private static int[] DAY_MAP = new int[]{
-                Calendar.MONDAY,
-                Calendar.TUESDAY,
-                Calendar.WEDNESDAY,
-                Calendar.THURSDAY,
-                Calendar.FRIDAY,
-                Calendar.SATURDAY,
-                Calendar.SUNDAY,
-        };
-
-
-        private static HashMap<Integer, Integer> DAY_TO_BIT_MASK = new HashMap<Integer, Integer>();
-
-        static {
-            for (int i = 0; i < DAY_MAP.length; i++) {
-                DAY_TO_BIT_MASK.put(DAY_MAP[i], i);
-            }
-        }
-
-        // Bitmask of all repeating days
-        private int mDays;
-
-        DaysOfWeek(int days) {
-            mDays = days;
-        }
-
-        public String toString(Context context, boolean showNever) {
-            return toString(context, showNever, false);
-        }
-
-        public String toAccessibilityString(Context context) {
-            return toString(context, false, true);
-        }
-
-        private String toString(Context context, boolean showNever, boolean forAccessibility) {
-            StringBuilder ret = new StringBuilder();
-
-            // no days
-            if (mDays == 0) {
-                return showNever ?
-                        context.getText(R.string.never).toString() : "";
-            }
-
-            // every day
-            if (mDays == 0x7f) {
-                return context.getText(R.string.every_day).toString();
-            }
-
-            // count selected days
-            int dayCount = 0, days = mDays;
-            while (days > 0) {
-                if ((days & 1) == 1) dayCount++;
-                days >>= 1;
-            }
-
-            // short or long form?
-            DateFormatSymbols dfs = new DateFormatSymbols();
-            String[] dayList = (forAccessibility || dayCount <= 1) ?
-                    dfs.getWeekdays() :
-                    dfs.getShortWeekdays();
-
-            // selected days
-            for (int i = 0; i < 7; i++) {
-                if ((mDays & (1 << i)) != 0) {
-                    ret.append(dayList[DAY_MAP[i]]);
-                    dayCount -= 1;
-                    if (dayCount > 0) ret.append(
-                            context.getText(R.string.day_concat));
-                }
-            }
-            return ret.toString();
-        }
-
-        private boolean isSet(int day) {
-            return ((mDays & (1 << day)) > 0);
-        }
-
-        /**
-         * Sets the repeat day for the alarm.
-         *
-         * @param dayOfWeek One of: Calendar.SUNDAY, Calendar.MONDAY, Calendar.TUESDAY, etc.
-         * @param set       Whether to set or unset.
-         */
-        public void setDayOfWeek(int dayOfWeek, boolean set) {
-            final int bitIndex = DAY_TO_BIT_MASK.get(dayOfWeek);
-            set(bitIndex, set);
-        }
-
-        public void set(int day, boolean set) {
-            if (set) {
-                mDays |= (1 << day);
-            } else {
-                mDays &= ~(1 << day);
-            }
-        }
-
-        public void set(DaysOfWeek dow) {
-            mDays = dow.mDays;
-        }
-
-        public int getCoded() {
-            return mDays;
-        }
-
-        public HashSet<Integer> getSetDays() {
-            final HashSet<Integer> set = new HashSet<Integer>();
-            for (int i = 0; i < 7; i++) {
-                if (isSet(i)) {
-                    set.add(DAY_MAP[i]);
-                }
-            }
-            return set;
-        }
-
-        // Returns days of week encoded in an array of booleans.
-        public boolean[] getBooleanArray() {
-            boolean[] ret = new boolean[7];
-            for (int i = 0; i < 7; i++) {
-                ret[i] = isSet(i);
-            }
-            return ret;
-        }
-
-        public boolean isRepeatSet() {
-            return mDays != 0;
-        }
-
-        /**
-         * returns number of days from today until next alarm
-         *
-         * @param c must be set to today
-         */
-        public int getNextAlarm(Calendar c) {
-            if (mDays == 0) {
-                return -1;
-            }
-
-            int today = (c.get(Calendar.DAY_OF_WEEK) + 5) % 7;
-
-            int day = 0;
-            int dayCount = 0;
-            for (; dayCount < 7; dayCount++) {
-                day = (today + dayCount) % 7;
-                if (isSet(day)) {
-                    break;
-                }
-            }
-            return dayCount;
-        }
-
-        @Override
-        public String toString() {
-            return "DaysOfWeek{" +
-                    "mDays=" + mDays +
-                    '}';
-        }
     }
 }

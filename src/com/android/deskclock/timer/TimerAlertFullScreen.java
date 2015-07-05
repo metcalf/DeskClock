@@ -18,6 +18,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,15 +27,16 @@ import android.view.WindowManager;
 
 import com.android.deskclock.R;
 import com.android.deskclock.Utils;
-import com.android.deskclock.timer.TimerFragment.OnEmptyListListener;
+import com.android.deskclock.timer.TimerFullScreenFragment.OnEmptyListListener;
 
 /**
  * Timer alarm alert: pops visible indicator. This activity is the version which
  * shows over the lock screen.
+ * This activity re-uses TimerFullScreenFragment GUI
  */
 public class TimerAlertFullScreen extends Activity implements OnEmptyListListener {
 
-//    private static final String TAG = "TimerAlertFullScreen";
+    private static final String TAG = "TimerAlertFullScreen";
     private static final String FRAGMENT = "timer";
 
     @Override
@@ -56,7 +58,7 @@ public class TimerAlertFullScreen extends Activity implements OnEmptyListListene
 
         // Don't create overlapping fragments.
         if (getFragment() == null) {
-            TimerFragment timerFragment = new TimerFragment();
+            TimerFullScreenFragment timerFragment = new TimerFullScreenFragment();
 
             // Create fragment and give it an argument to only show
             // timers in STATE_TIMESUP state
@@ -69,6 +71,23 @@ public class TimerAlertFullScreen extends Activity implements OnEmptyListListene
             getFragmentManager().beginTransaction()
                     .add(R.id.fragment_container, timerFragment, FRAGMENT).commit();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        getWindow().getDecorView().setBackgroundColor(Utils.getCurrentHourColor());
+
+        // Only show notifications for times-up when this activity closed.
+        Utils.cancelTimesUpNotifications(this);
+    }
+
+    @Override
+    public void onPause() {
+        Utils.showTimesUpNotifications(this);
+
+        super.onPause();
     }
 
     @Override
@@ -99,7 +118,7 @@ public class TimerAlertFullScreen extends Activity implements OnEmptyListListene
      */
     @Override
     protected void onNewIntent(Intent intent) {
-        TimerFragment timerFragment = getFragment();
+        TimerFullScreenFragment timerFragment = getFragment();
         if (timerFragment != null) {
             timerFragment.restartAdapter();
         }
@@ -113,20 +132,18 @@ public class TimerAlertFullScreen extends Activity implements OnEmptyListListene
         super.onConfigurationChanged(newConfig);
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-    }
-
     protected void stopAllTimesUpTimers() {
-        TimerFragment timerFragment = getFragment();
+        TimerFullScreenFragment timerFragment = getFragment();
         if (timerFragment != null) {
-            timerFragment.stopAllTimesUpTimers();
+            timerFragment.updateAllTimesUpTimers(true /* stop */);
         }
     }
 
     @Override
     public void onEmptyList() {
+        if (Timers.LOGGING) {
+            Log.v(TAG, "onEmptyList");
+        }
         onListChanged();
         finish();
     }
@@ -136,7 +153,7 @@ public class TimerAlertFullScreen extends Activity implements OnEmptyListListene
         Utils.showInUseNotifications(this);
     }
 
-    private TimerFragment getFragment() {
-        return (TimerFragment) getFragmentManager().findFragmentByTag(FRAGMENT);
+    private TimerFullScreenFragment getFragment() {
+        return (TimerFullScreenFragment) getFragmentManager().findFragmentByTag(FRAGMENT);
     }
 }

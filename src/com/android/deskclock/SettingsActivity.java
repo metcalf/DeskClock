@@ -25,8 +25,6 @@ import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import android.preference.PreferenceScreen;
-import android.provider.Settings;
 import android.text.format.DateUtils;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,16 +42,11 @@ import java.util.TimeZone;
 public class SettingsActivity extends PreferenceActivity
         implements Preference.OnPreferenceChangeListener {
 
-    private static final int ALARM_STREAM_TYPE_BIT =
-            1 << AudioManager.STREAM_ALARM;
-
-    static final String KEY_ALARM_IN_SILENT_MODE =
-            "alarm_in_silent_mode";
-    static final String KEY_ALARM_SNOOZE =
+    public static final String KEY_ALARM_SNOOZE =
             "snooze_duration";
-    static final String KEY_VOLUME_BEHAVIOR =
+    public static final String KEY_VOLUME_BEHAVIOR =
             "volume_button_setting";
-    static final String KEY_AUTO_SILENCE =
+    public static final String KEY_AUTO_SILENCE =
             "auto_silence";
     public static final String KEY_CLOCK_STYLE =
             "clock_style";
@@ -61,10 +54,13 @@ public class SettingsActivity extends PreferenceActivity
             "home_time_zone";
     public static final String KEY_AUTO_HOME_CLOCK =
             "automatic_home_clock";
-    static final String KEY_VOLUME_BUTTONS =
+    public static final String KEY_VOLUME_BUTTONS =
             "volume_button_setting";
 
     public static final String DEFAULT_VOLUME_BEHAVIOR = "0";
+    public static final String VOLUME_BEHAVIOR_SNOOZE = "1";
+    public static final String VOLUME_BEHAVIOR_DISMISS = "2";
+
 
     private static CharSequence[][] mTimezones;
     private long mTime;
@@ -73,6 +69,8 @@ public class SettingsActivity extends PreferenceActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setVolumeControlStream(AudioManager.STREAM_ALARM);
+
         addPreferencesFromResource(R.xml.settings);
 
         ActionBar actionBar = getActionBar();
@@ -98,6 +96,7 @@ public class SettingsActivity extends PreferenceActivity
     @Override
     protected void onResume() {
         super.onResume();
+        getWindow().getDecorView().setBackgroundColor(Utils.getCurrentHourColor());
         refresh();
     }
 
@@ -113,7 +112,6 @@ public class SettingsActivity extends PreferenceActivity
         return super.onOptionsItemSelected(item);
     }
 
-
     @Override
     public boolean onCreateOptionsMenu (Menu menu) {
         getMenuInflater().inflate(R.menu.settings_menu, menu);
@@ -122,31 +120,6 @@ public class SettingsActivity extends PreferenceActivity
             Utils.prepareHelpMenuItem(this, help);
         }
         return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
-            Preference preference) {
-        if (KEY_ALARM_IN_SILENT_MODE.equals(preference.getKey())) {
-            CheckBoxPreference pref = (CheckBoxPreference) preference;
-            int ringerModeStreamTypes = Settings.System.getInt(
-                    getContentResolver(),
-                    Settings.System.MODE_RINGER_STREAMS_AFFECTED, 0);
-
-            if (pref.isChecked()) {
-                ringerModeStreamTypes &= ~ALARM_STREAM_TYPE_BIT;
-            } else {
-                ringerModeStreamTypes |= ALARM_STREAM_TYPE_BIT;
-            }
-
-            Settings.System.putInt(getContentResolver(),
-                    Settings.System.MODE_RINGER_STREAMS_AFFECTED,
-                    ringerModeStreamTypes);
-
-            return true;
-        }
-
-        return super.onPreferenceTreeClick(preferenceScreen, preference);
     }
 
     @Override
@@ -175,6 +148,12 @@ public class SettingsActivity extends PreferenceActivity
             listPref.setSummary(listPref.getEntries()[idx]);
         }
         return true;
+    }
+
+    @Override
+    protected boolean isValidFragment(String fragmentName) {
+        // Exported activity but no headers we support.
+        return false;
     }
 
     private void updateAutoSnoozeSummary(ListPreference listPref,
@@ -276,11 +255,13 @@ public class SettingsActivity extends PreferenceActivity
         Resources resources = this.getResources();
         String[] ids = resources.getStringArray(R.array.timezone_values);
         String[] labels = resources.getStringArray(R.array.timezone_labels);
+        int minLength = ids.length;
         if (ids.length != labels.length) {
-            Log.wtf("Timezone ids and labels have different length!");
+            minLength = Math.min(minLength, labels.length);
+            LogUtils.e("Timezone ids and labels have different length!");
         }
         List<TimeZoneRow> timezones = new ArrayList<TimeZoneRow>();
-        for (int i = 0; i < ids.length; i++) {
+        for (int i = 0; i < minLength; i++) {
             timezones.add(new TimeZoneRow(ids[i], labels[i]));
         }
         Collections.sort(timezones);

@@ -23,10 +23,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.TextClock;
 import android.widget.TextView;
 
 import com.android.deskclock.AnalogClock;
-import com.android.deskclock.DigitalClock;
 import com.android.deskclock.R;
 import com.android.deskclock.SettingsActivity;
 import com.android.deskclock.Utils;
@@ -47,6 +47,7 @@ public class WorldClockAdapter extends BaseAdapter {
     private String mClockStyle;
     private final Collator mCollator = Collator.getInstance();
     protected HashMap<String, CityObj> mCitiesDb = new HashMap<String, CityObj>();
+    protected int mClocksPerRow;
 
     public WorldClockAdapter(Context context) {
         super();
@@ -54,6 +55,7 @@ public class WorldClockAdapter extends BaseAdapter {
         loadData(context);
         loadCitiesDb(context);
         mInflater = LayoutInflater.from(context);
+        mClocksPerRow = context.getResources().getInteger(R.integer.world_clocks_per_row);
     }
 
     public void reloadData(Context context) {
@@ -75,7 +77,7 @@ public class WorldClockAdapter extends BaseAdapter {
         // Read the cities DB so that the names and timezones will be taken from the DB
         // and not from the selected list so that change of locale or changes in the DB will
         // be reflected.
-        CityObj[] cities = Utils.loadCitiesDataBase(context);
+        CityObj[] cities = Utils.loadCitiesFromXml(context);
         if (cities != null) {
             for (int i = 0; i < cities.length; i ++) {
                 mCitiesDb.put(cities[i].mCityId, cities [i]);
@@ -174,7 +176,12 @@ public class WorldClockAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        // Each item in the list holds 1 or 2 clocks
+        if (mClocksPerRow == 1) {
+            // In the special case where we have only 1 clock per view.
+            return mCitiesList.length;
+        }
+
+        // Otherwise, each item in the list holds 1 or 2 clocks
         return (mCitiesList.length  + 1)/2;
     }
 
@@ -196,7 +203,7 @@ public class WorldClockAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View view, ViewGroup parent) {
         // Index in cities list
-        int index = position * 2;
+        int index = position * mClocksPerRow;
         if (index < 0 || index >= mCitiesList.length) {
             return null;
         }
@@ -204,27 +211,7 @@ public class WorldClockAdapter extends BaseAdapter {
         if (view == null) {
             view = mInflater.inflate(R.layout.world_clock_list_item, parent, false);
         }
-        // The world clock list item can hold two world clocks
-        View rightClock = view.findViewById(R.id.city_right);
         updateView(view.findViewById(R.id.city_left), (CityObj)mCitiesList[index]);
-        if (index + 1 < mCitiesList.length) {
-            rightClock.setVisibility(View.VISIBLE);
-            updateView(rightClock, (CityObj)mCitiesList[index + 1]);
-        } else {
-            // To make sure the spacing is right , make sure that the right clock style is selected
-            // even if the clock is invisible.
-            DigitalClock dclock = (DigitalClock)(rightClock.findViewById(R.id.digital_clock));
-            AnalogClock aclock = (AnalogClock)(rightClock.findViewById(R.id.analog_clock));
-            if (mClockStyle.equals("analog")) {
-                dclock.setVisibility(View.GONE);
-                aclock.setVisibility(View.INVISIBLE);
-            } else {
-                dclock.setVisibility(View.INVISIBLE);
-                aclock.setVisibility(View.GONE);
-            }
-            rightClock.setVisibility(View.INVISIBLE);
-        }
-
         return view;
     }
 
@@ -232,7 +219,7 @@ public class WorldClockAdapter extends BaseAdapter {
         View nameLayout= clock.findViewById(R.id.city_name_layout);
         TextView name = (TextView)(nameLayout.findViewById(R.id.city_name));
         TextView dayOfWeek = (TextView)(nameLayout.findViewById(R.id.city_day));
-        DigitalClock dclock = (DigitalClock)(clock.findViewById(R.id.digital_clock));
+        TextClock dclock = (TextClock)(clock.findViewById(R.id.digital_clock));
         AnalogClock aclock = (AnalogClock)(clock.findViewById(R.id.analog_clock));
 
         if (mClockStyle.equals("analog")) {
@@ -244,6 +231,8 @@ public class WorldClockAdapter extends BaseAdapter {
             dclock.setVisibility(View.VISIBLE);
             aclock.setVisibility(View.GONE);
             dclock.setTimeZone(cityObj.mTimeZone);
+            Utils.setTimeFormat(dclock,
+                    (int)mContext.getResources().getDimension(R.dimen.label_font_size));
         }
         CityObj cityInDb = mCitiesDb.get(cityObj.mCityId);
         // Home city or city not in DB , use data from the save selected cities list

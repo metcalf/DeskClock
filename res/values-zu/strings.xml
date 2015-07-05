@@ -35,11 +35,28 @@
     <string name="alert" msgid="6506982899651975645">"Ithoni yokukhala ye-alamu"</string>
     <string name="ringtone" msgid="9110746249688559579">"Ithoni yokukhala"</string>
     <string name="time" msgid="8067216534232296518">"Isikhathi"</string>
+    <string name="alarm_tomorrow" msgid="131356848787643420">"Kusasa"</string>
+    <string name="alarm_today" msgid="7873594221106531654">"Namhlanje"</string>
+    <string name="alarm_alert_wake_up" msgid="6790780716498252583">"Vuka!"</string>
+    <string name="alarm_alert_off_action_text" msgid="2459925305288819812">"Valiwe"</string>
     <string name="alarm_alert_dismiss_text" msgid="4942914605480888820">"Cashisa"</string>
-    <string name="alarm_alert_alert_silenced" msgid="2704775170733835993">"I-alamu ithuliswe emva kwamaminithi angu-<xliff:g id="MINUTES">%d</xliff:g>"</string>
+    <string name="alarm_alert_dismiss_now_text" msgid="3272183025444682500">"Cashisa manje"</string>
+    <string name="alarm_missed_title" msgid="3828345099754063392">"I-Alamu ekuphuthele"</string>
+    <string name="alarm_missed_text" msgid="6585658367289194023">"<xliff:g id="ALARM_TIME">%s</xliff:g> - <xliff:g id="ALARM_LABEL">%s</xliff:g>"</string>
+    <string name="alarm_alert_snoozed_text" msgid="7064642998528766113">"Kusnuziwe"</string>
+  <plurals name="alarm_alert_snooze_duration">
+    <item quantity="one" msgid="9092917312369131464">"1 iminithi"</item>
+    <item quantity="other" msgid="6731274475422132958">"<xliff:g id="NUMBER">%d</xliff:g> iminithi"</item>
+  </plurals>
+    <string name="alarm_alert_off_text" msgid="4472073417593915002">"I-alamu ivaliwe"</string>
     <string name="alarm_alert_snooze_text" msgid="1774416052207651584">"Ukusnuza"</string>
-    <string name="alarm_alert_snooze_set" msgid="656470966696912087">"Iyozela <xliff:g id="MINUTES">%d</xliff:g> amaminithi"</string>
+  <plurals name="alarm_alert_snooze_set">
+    <item quantity="one" msgid="7884410398338611019">"Isnuzwe iminithi engu-1"</item>
+    <item quantity="other" msgid="7377899473014259727">"Isnuza amaminithi angu-<xliff:g id="MINUTES">%d</xliff:g>."</item>
+  </plurals>
     <string name="alarm_alert_snooze_until" msgid="6958013659168344550">"Snuza kuze kube ngu-<xliff:g id="TIME">%s</xliff:g>"</string>
+    <string name="alarm_alert_predismiss_title" msgid="5723945586913705445">"I-Alamu ezayo"</string>
+    <string name="missed_alarm_has_been_deleted" msgid="5295473204045979335">"I-Alamu yakho ekuphuthele isusiwe"</string>
   <string-array name="timer_notifications">
     <item msgid="7760558912503484257">"Ngaphansi kweminithi okusele"</item>
     <item msgid="83197792732433351">"<xliff:g id="HOURS">%1$s</xliff:g> asele"</item>
@@ -56,7 +73,7 @@
     <item msgid="9115697840826129603">"I-alamu ihlelelwe u-<xliff:g id="HOURS">%2$s</xliff:g> kanye no-<xliff:g id="MINUTES">%3$s</xliff:g> ukusuka manje."</item>
     <item msgid="2332583385137381060">"I-alamu isethelwe <xliff:g id="DAYS">%1$s</xliff:g>, <xliff:g id="HOURS">%2$s</xliff:g>, <xliff:g id="MINUTES">%3$s</xliff:g> kusuka manje."</item>
   </string-array>
-    <string name="day" msgid="7984755014526510295">"Usuku olungu-1"</string>
+    <string name="day" msgid="7984755014526510295">"1 usuku"</string>
     <string name="days" msgid="2070509222727852210">"<xliff:g id="DAYS">%s</xliff:g> izinsuku"</string>
     <string name="hour" msgid="2546819039651509323">"1 ihora"</string>
     <string name="hours" msgid="2071487018566991613">"<xliff:g id="HOURS">%s</xliff:g> amahora"</string>
@@ -82,18 +99,18 @@
     <string name="auto_silence_summary" msgid="7028508740659733028">"<xliff:g id="MINUTES">%d</xliff:g> amaminithi"</string>
     <string name="auto_silence_never" msgid="4821982647348750809">"Ungalokothi"</string>
   <string-array name="auto_silence_entries">
-    <item msgid="3693401222993867634">"5 amaminithi"</item>
-    <item msgid="3663730603519549990">"10 amaminithi"</item>
-    <item msgid="1385481095199681200">"15 amaminithi"</item>
-    <item msgid="420479821767342125">"20 amaminithi"</item>
-    <item msgid="2107936130151066746">"25 amaminithi"</item>
-    <item msgid="7219791437023378544">"30 amaminithi"</item>
+    <item msgid="3024545954917711306">"1 iminithi"</item>
+    <item msgid="5431906692406316549">"5 amaminithi"</item>
+    <item msgid="7742728812068919959">"10 amaminithi"</item>
+    <item msgid="2855948657259647629">"15 amaminithi"</item>
+    <item msgid="6330196381284475079">"20 amaminithi"</item>
+    <item msgid="7809240121716151904">"25 amaminithi"</item>
     <item msgid="4278641338024561333">"Ungalokothi"</item>
   </string-array>
     <string name="done" msgid="6509722361933858451">"Kwenziwe"</string>
     <string name="revert" msgid="9100911171235162926">"Buyela emuva"</string>
     <string name="delete" msgid="5732434972457000541">"Susa"</string>
-    <string name="alarm_volume_title" msgid="8506245173912428522">"Ivoliyumu ye-alamu"</string>
+    <string name="alarm_volume_title" msgid="8506245173912428522">"Ivolumu ye-alamu"</string>
     <string name="silent_alarm_summary" msgid="8605302849408279221">"Thulile"</string>
     <string name="alarm_notify_text" msgid="4891014685945904766">"Misa okwesikhashana  noma cima i-alamu."</string>
     <string name="alarm_notify_snooze_label" msgid="5404083762646377829">"<xliff:g id="LABEL">%s</xliff:g> (snuziwe)"</string>
@@ -114,7 +131,6 @@
     <string name="desk_clock_button_description" msgid="4207371097361657274">"Ukubukeka kwewashi"</string>
     <string name="label_description" msgid="8736179296142915727">"Ilebula"</string>
     <string name="ringtone_description" msgid="7580922112921069925">"Ithoni yokukhala"</string>
-    <string name="battery_charging_level" msgid="5251483622085889693">"<xliff:g id="NUMBER">%d</xliff:g><xliff:g id="PERCENT">%%</xliff:g>"</string>
     <string name="weather_fetch_failure" msgid="3425804832021006835">"Ulwazi lwesimo sezulu alukho okwamanje."</string>
     <string name="alarm_klaxon_service_desc" msgid="2147506334302260256">"Insiza yokudlala komsindo we-alamu usethwe ku-Desk Clock."</string>
     <string name="loading_ringtone" msgid="6523322777415268044">"Ilayisha iringithoni..."</string>
@@ -122,15 +138,19 @@
     <string name="control_set_alarm" msgid="2194676418924016327">"Setha i-alamu"</string>
     <!-- no translation found for control_set_alarm_with_existing (3359285346655630660) -->
     <skip />
+    <string name="menu_alarm" msgid="4772010125376647519">"I-Alamu"</string>
     <string name="menu_timer" msgid="6459070074762877114">"Isikali sesikhathi"</string>
     <string name="menu_clock" msgid="5612760670606829805">"Iwashi"</string>
     <string name="menu_stopwatch" msgid="3396117705293574701">"Iwashi lokumisa"</string>
-    <string name="button_alarms" msgid="8016103479617020265">"Ama-alamu"</string>
+    <string name="button_alarms" msgid="3907838219512538763">"Engeza i-alamu"</string>
     <string name="button_cities" msgid="4555761857494501363">"Amadolobha"</string>
     <string name="button_menu" msgid="6050484561842120282">"Izinketho eziningi"</string>
     <string name="menu_item_settings" msgid="1413723516369078665">"Izilungiselelo"</string>
     <string name="menu_item_help" msgid="4570953476186849841">"Usizo"</string>
     <string name="menu_item_night_mode" msgid="3486930302245398975">"Imodi yasebusuku"</string>
+    <string name="menu_item_sort_by_gmt_offset" msgid="3120860422682721706">"Hlunga ngesikhathi"</string>
+    <string name="menu_item_sort_by_name" msgid="1762931290495104106">"Hlunga ngegama"</string>
+    <string name="selected_cities_label" msgid="3607479399424246605">"Amadolobha akhethiwe"</string>
     <string name="sw_resume_button" msgid="2569360966002022248">"Qala futhi"</string>
     <string name="sw_start_button" msgid="8373422516681242270">"Qala"</string>
     <string name="sw_stop_button" msgid="8322958613123274451">"Misa"</string>
@@ -163,11 +183,14 @@
     <string name="timer_start" msgid="6158486445614356442">"Qala"</string>
     <string name="timer_delete" msgid="8699122001991909302">"Susa"</string>
     <string name="timer_plus_one" msgid="6631211310420106116">"Engeza 1 imininithi"</string>
+    <string name="timer_plus_1_min" msgid="8645224089494875062">"Engeza iminithi elingu-1"</string>
     <string name="timer_stop" msgid="3361154678667736722">"Misa"</string>
+    <string name="timer_done" msgid="2375990511982914051">"Kwenziwe"</string>
     <string name="timer_reset" msgid="7848424809190171640">"Setha kabusha"</string>
     <string name="timer_cancel" msgid="3572868404230815644">"Khansela"</string>
     <string name="timer_times_up" msgid="9190440395938519009">"Isikhathi siphelile"</string>
     <string name="timer_notification_label" msgid="4933184831583137249">"Isikali sesikhathi"</string>
+    <string name="timers_max_count_reached" msgid="9140022846793903813">"4 ubukhulu bezibali sikhathi"</string>
   <string-array name="sw_share_strings">
     <item msgid="842841032273927988">"Ulidimoni elisheshayo."</item>
     <item msgid="6332879039890727169">"Thokozela izithelo zomsebenzi wakho."</item>
@@ -186,7 +209,7 @@
   </plurals>
     <string name="home_label" msgid="4436139365695453870">"Esasekhaya"</string>
     <string name="cities_activity_title" msgid="8552462751129256730">"Amadolobha"</string>
-    <string name="clock_settings" msgid="8887845806151785393">"IWASHI"</string>
+    <string name="clock_settings" msgid="8317286807280600391">"Iwashi"</string>
     <string name="clock_style" msgid="2265011060429742344">"Isitayela"</string>
   <string-array name="clock_style_entries">
     <item msgid="917900462224167608">"I-Analog"</item>
@@ -287,15 +310,13 @@
     <item msgid="8255615641810148152">"esase-Auckland"</item>
     <item msgid="3027153773466391728">"esase-Fiji"</item>
     <item msgid="5911600083231840181">"esase-Tonga"</item>
+    <item msgid="5176858645450908751">"I-Jakarta"</item>
   </string-array>
-    <string name="alarm_settings" msgid="6049627772103646753">"AMA-ALAMU"</string>
-    <string name="see_all" msgid="775983396630163739">"Buka konke..."</string>
+    <string name="alarm_settings" msgid="2947147071388290814">"Ama-alamu"</string>
     <string name="stopwatch_service_desc" msgid="8416624630388063996">"Isevisi yewashi lokumisa izoqalisa isaziso."</string>
     <string name="swn_stopped" msgid="783124901663086172">"Imisiwe"</string>
-    <string name="description_direction_right" msgid="1615911557926085934">"Shelelisela ngakwesokudla ukuze uchithe"</string>
-    <string name="description_direction_left" msgid="6328816971226781776">"Shelelisela ngakwesokunxele ukuze usnuze"</string>
-    <string name="description_direction_up" msgid="7875287578324520904">"Shelelisela phezulu ukuze uchithe"</string>
-    <string name="description_direction_down" msgid="8240473964024874053">"Shelelisela phansi ukuze usnuze"</string>
+    <string name="description_direction_right" msgid="5709209043267548985">"Swayipha ngakwesokudla ukuze ucashise"</string>
+    <string name="description_direction_left" msgid="7448141043674998679">"Swayipha ngakwesokunxele ukuze usnuze"</string>
     <string name="timer_stopped" msgid="2730331837832462008">"Isikhathi simisiwe"</string>
     <string name="timers_stopped" msgid="2393640808691864520">"<xliff:g id="NUMBER">%d</xliff:g> izikhathi ezimisiwe"</string>
     <string name="all_timers_stopped_notif" msgid="278532320068394600">"Thinta ukuze ubone izikhathi zakho"</string>
@@ -321,4 +342,7 @@
     <string name="timer_delete_confirmation" msgid="2815524107015816453">"Susa lesi sikali sesikhathi?"</string>
     <string name="city_delete_confirmation" msgid="1783441538785676299">"Susa leli dolobha?"</string>
     <string name="digital_gadget" msgid="2326954556720571358">"Iwashi elidijithali"</string>
+    <string name="no_alarms" msgid="6429431324842022917">"Awekho ama-alamu"</string>
+    <string name="no_alarms_set" msgid="4887558279496044764">"Awekho ama-alamu asethiwe"</string>
+    <string name="no_upcoming_alarms" msgid="2889840988069436254">"AWEKHO AMA-ALAMU EZAYO"</string>
 </resources>

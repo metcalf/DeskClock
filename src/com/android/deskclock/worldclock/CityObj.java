@@ -27,6 +27,7 @@ public class CityObj {
     public String mCityName;
     public String mTimeZone;
     public String mCityId;
+    public boolean isHeader;
 
     public CityObj(String name, String timezone, String id) {
         mCityName = name;
@@ -43,7 +44,6 @@ public class CityObj {
                 '}';
     }
 
-
     public CityObj(SharedPreferences prefs, int index) {
         mCityName = prefs.getString(CITY_NAME + index, null);
         mTimeZone = prefs.getString(CITY_TIME_ZONE + index, null);
@@ -55,5 +55,4 @@ public class CityObj {
         editor.putString (CITY_TIME_ZONE + index, mTimeZone);
         editor.putString (CITY_ID + index, mCityId);
     }
-
 }

@@ -296,6 +296,26 @@
         <item>Guangzhou</item>
         <item>Hyderabad</item>
         <item>Reston</item>
+        <item>Belo Horizonte</item>
+        <item>Santiago</item>
+        <item>Monrovia</item>
+        <item>Colombo</item>
+        <item>Chihuahua</item>
+        <item>Salvador</item>
+        <item>Gurgaon</item>
+        <item>Manchester</item>
+        <item>Kyiv</item>
+        <item>St. Petersburg</item>
+        <item>Kraków</item>
+        <item>Wroclaw</item>
+        <item>Hamburg</item>
+        <item>Oulu</item>
+        <item>Haifa</item>
+        <item>San Juan</item>
+        <item>Tegucigalpa</item>
+        <item>Paramaribo</item>
+        <item>Quito</item>
+        <item>Ljubljana</item>
     </string-array>
 
     <string-array name="cities_tz" translatable="false">
@@ -579,6 +599,26 @@
         <item>Asia/Shanghai</item>
         <item>Asia/Kolkata</item>
         <item>America/New_York</item>
+        <item>America/Sao_Paulo</item>
+        <item>America/Santiago</item>
+        <item>Africa/Monrovia</item>
+        <item>Asia/Colombo</item>
+        <item>America/Chihuahua</item>
+        <item>America/Sao_Paulo</item>
+        <item>Asia/Kolkata</item>
+        <item>Europe/London</item>
+        <item>Europe/Bucharest</item>
+        <item>Europe/Moscow</item>
+        <item>Europe/Warsaw</item>
+        <item>Europe/Warsaw</item>
+        <item>Europe/Berlin</item>
+        <item>Europe/Bucharest</item>
+        <item>Asia/Jerusalem</item>
+        <item>America/Puerto Rico</item>
+        <item>America/Tegucigalpa</item>
+        <item>America/Paramaribo</item>
+        <item>America/Panama</item>
+        <item>Europe/Ljubljana</item>
     </string-array>
 
     <string-array name="cities_id" translatable="false">
@@ -862,43 +902,25 @@
         <item>C278</item>
         <item>C279</item>
         <item>C280</item>
+        <item>C281</item>
+        <item>C282</item>
+        <item>C283</item>
+        <item>C284</item>
+        <item>C285</item>
+        <item>C286</item>
+        <item>C287</item>
+        <item>C288</item>
+        <item>C289</item>
+        <item>C290</item>
+        <item>C291</item>
+        <item>C292</item>
+        <item>C293</item>
+        <item>C294</item>
+        <item>C295</item>
+        <item>C296</item>
+        <item>C297</item>
+        <item>C298</item>
+        <item>C299</item>
+        <item>C300</item>
     </string-array>
-
-    <array name="snooze_dismiss_drawables">
-        <item>@drawable/ic_alarm_alert_dismiss</item>
-        <item>@null</item>
-        <item>@drawable/ic_alarm_alert_snooze</item>
-        <item>@null</item>
-    </array>
-    <array name="snooze_dismiss_descriptions">
-        <item>@string/alarm_alert_dismiss_text</item>
-        <item>@null</item>
-        <item>@string/alarm_alert_snooze_text</item>
-        <item>@null</item>
-    </array>
-    <array name="snooze_dismiss_direction_descriptions">
-        <item>@string/description_direction_right</item>
-        <item>@null</item>
-        <item>@string/description_direction_left</item>
-        <item>@null</item>
-    </array>
-
-    <array name="dismiss_drawables">
-        <item>@drawable/ic_alarm_alert_dismiss</item>
-        <item>@null</item>
-        <item>@null</item>
-        <item>@null</item>
-    </array>
-    <array name="dismiss_descriptions">
-        <item>@string/alarm_alert_dismiss_text</item>
-        <item>@null</item>
-        <item>@null</item>
-        <item>@null</item>
-    </array>
-    <array name="dismiss_direction_descriptions">
-        <item>@string/description_direction_right</item>
-        <item>@null</item>
-        <item>@null</item>
-        <item>@null</item>
-    </array>
 </resources>
