@@ -491,9 +491,8 @@ public class AlarmClockFragment extends DeskClockFragment implements
     private void saveLightSetting(Intent intent) {
         int color = intent.getIntExtra(LightPicker.EXTRA_COLOR, 0);
         int time = intent.getIntExtra(LightPicker.EXTRA_TIME, 0);
-        boolean colored = (color != 0);
 
-        mSelectedAlarm.lightEnabled = colored;
+        mSelectedAlarm.lightEnabled = (color != 0);
         mSelectedAlarm.lightColor = color;
         mSelectedAlarm.lightTime = time;
 
@@ -1003,11 +1002,15 @@ public class AlarmClockFragment extends DeskClockFragment implements
             });
 
             itemHolder.light.setVisibility(View.VISIBLE);
-            if (!alarm.lightEnabled) {
-                itemHolder.light.setChecked(false);
-            } else {
-                itemHolder.light.setChecked(true);
-            }
+            itemHolder.light.setChecked(alarm.lightEnabled);
+
+            itemHolder.light.setOnLongClickListener(new View.OnLongClickListener(){
+                @Override
+                public boolean onLongClick(View v) {
+                    launchLightPicker(alarm);
+                    return true;
+                }
+            });
 
             itemHolder.light.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -1015,7 +1018,6 @@ public class AlarmClockFragment extends DeskClockFragment implements
                     final boolean checked = ((CheckBox) v).isChecked();
 
                     if (checked) {
-                        ((CheckBox) v).setChecked(false);
                         launchLightPicker(alarm);
                     } else {
                         alarm.lightEnabled = false;
